@@ -6,7 +6,7 @@ from tiktok_downloader.domains.tiktok.models import Video
 
 
 @patch('tiktok_downloader.cli.download_videos')
-def test_cli_metadata_only_success(mock_download_videos):
+def test_cli_metadata_only_success(mock_download_videos, caplog):
     """
     GIVEN a URL and the --metadata-only flag
     WHEN the CLI is invoked
@@ -23,7 +23,7 @@ def test_cli_metadata_only_success(mock_download_videos):
     url = "http://tiktok.com/@testuser"
 
     # ACT
-    result = runner.invoke(main, [url, '--metadata-only'])
+    result = runner.invoke(main, [url, '--metadata-only', '-v'])
 
     # ASSERT
     assert result.exit_code == 0
@@ -37,7 +37,7 @@ def test_cli_metadata_only_success(mock_download_videos):
         transcript_language='en-US',
         metadata_only=True,
     )
-    assert "Found 2 videos that match the criteria." in result.output
+    assert "Found 2 videos that match the criteria." in caplog.text
     assert "ID:          123" in result.output
     assert "Title:       Video 1" in result.output
 
@@ -103,7 +103,7 @@ def test_cli_from_file(mock_download_videos):
 
 
 @patch('tiktok_downloader.cli.download_videos')
-def test_cli_download_workflow_with_language(mock_download_videos):
+def test_cli_download_workflow_with_language(mock_download_videos, caplog):
     """
     GIVEN a URL and transcript options
     WHEN the CLI is invoked
@@ -122,12 +122,13 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         url,
         '--output-path', '/my/downloads',
         '--transcripts',
-        '--transcript-language', 'es'
+        '--transcript-language', 'es',
+        '-v'
     ])
 
     # ASSERT
     assert result.exit_code == 0
-    assert "Downloading 1 video(s)..." in result.output
+    assert "Downloading 1 video(s)..." in caplog.text
     mock_download_videos.assert_called_once_with(
         tiktok_url=url,
         from_file=None,
@@ -141,7 +142,7 @@ def test_cli_download_workflow_with_language(mock_download_videos):
 
 
 @patch('tiktok_downloader.cli.download_videos', side_effect=ValueError("Test error"))
-def test_cli_handles_value_error(mock_download_videos):
+def test_cli_handles_value_error(mock_download_videos, caplog):
     """
     GIVEN the core logic raises a ValueError
     WHEN the CLI is invoked
@@ -151,10 +152,10 @@ def test_cli_handles_value_error(mock_download_videos):
     result = runner.invoke(main, ["some_url"])
 
     assert result.exit_code != 0
-    assert "Error: Test error" in result.output
+    assert "Error: Test error" in caplog.text
 
 
-def test_cli_no_input_fails():
+def test_cli_no_input_fails(caplog):
     """
     GIVEN no URL or --from-file option
     WHEN the CLI is invoked
@@ -168,7 +169,7 @@ def test_cli_no_input_fails():
         result = runner.invoke(main, [])
 
     assert result.exit_code != 0
-    assert "Error: You must provide either a tiktok_url or from_file." in result.output
+    assert "Error: You must provide either a tiktok_url or from_file." in caplog.text
 
 
 @patch('tiktok_downloader.cli.download_videos')
@@ -192,7 +193,7 @@ def test_cli_metadata_only_no_videos(mock_download_videos):
 
 
 @patch('tiktok_downloader.cli.download_videos')
-def test_cli_download_no_videos(mock_download_videos):
+def test_cli_download_no_videos(mock_download_videos, caplog):
     """
     GIVEN no videos are found after filtering
     WHEN the CLI is invoked for download
@@ -204,8 +205,8 @@ def test_cli_download_no_videos(mock_download_videos):
     url = "http://tiktok.com/@testuser"
 
     # ACT
-    result = runner.invoke(main, [url]) # No --metadata-only
+    result = runner.invoke(main, [url, '-v']) # No --metadata-only
 
     # ASSERT
     assert result.exit_code == 0
-    assert "No videos to download." in result.output
+    assert "No videos to download." in caplog.text
