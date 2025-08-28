@@ -79,7 +79,7 @@ class TikTokRepository:
         self,
         videos: List[Video],
         output_path: str,
-        download_transcripts: bool,
+        transcript_language: str | None,
     ) -> None:
         """
         Downloads the given list of videos using yt-dlp.
@@ -87,7 +87,7 @@ class TikTokRepository:
         Args:
             videos: A list of Video domain models to download.
             output_path: The directory where files should be saved.
-            download_transcripts: Whether to download subtitles/transcripts.
+            transcript_language: The language of the transcript to download.
         """
         if not videos:
             return
@@ -97,11 +97,11 @@ class TikTokRepository:
             'writethumbnail': True,
         }
 
-        if download_transcripts:
+        if transcript_language:
             ydl_opts.update({
                 'writesubtitles': True,
                 'writeautomaticsub': True,
-                'subtitleslangs': ['en'],
+                'subtitleslangs': [transcript_language],
             })
 
         video_urls = [v.webpage_url for v in videos]

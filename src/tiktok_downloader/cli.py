@@ -37,6 +37,7 @@ def _display_metadata(videos: List[Video]):
 @click.option('--min-likes', type=int, help='Filter videos with at least this many likes.')
 @click.option('--min-views', type=int, help='Filter videos with at least this many views.')
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
+@click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
 def main(
     tiktok_url: Optional[str],
@@ -45,6 +46,7 @@ def main(
     min_likes: Optional[int],
     min_views: Optional[int],
     download_transcripts: Optional[bool],
+    transcript_language: str,
     metadata_only: bool,
 ):
     """
@@ -63,6 +65,7 @@ def main(
             min_likes=min_likes,
             min_views=min_views,
             download_transcripts=download_transcripts,
+            transcript_language=transcript_language,
             metadata_only=metadata_only,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")

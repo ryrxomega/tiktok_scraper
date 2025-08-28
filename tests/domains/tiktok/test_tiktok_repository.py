@@ -58,29 +58,28 @@ def test_fetch_metadata_success(MockYoutubeDL):
 
 
 @patch('yt_dlp.YoutubeDL')
-def test_download_videos_success(MockYoutubeDL):
+def test_download_videos_with_transcript_language(MockYoutubeDL):
     """
-    GIVEN a list of Video models and an output path
+    GIVEN a list of Video models and a transcript language
     WHEN download_videos is called
-    THEN it should use yt-dlp to download the specified videos.
+    THEN it should call yt-dlp with the correct subtitle options.
     """
     # ARRANGE
     videos_to_download = [
         Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
-        Video(id='67890', title='Video 2', webpage_url='http://.../67890')
     ]
-    output_path = "/fake/path/for/downloads"
+    output_path = "/fake/path"
+    transcript_language = 'es'
 
     mock_instance = MagicMock()
     MockYoutubeDL.return_value.__enter__.return_value = mock_instance
-
     repo = TikTokRepository()
 
     # ACT
     repo.download_videos(
         videos=videos_to_download,
         output_path=output_path,
-        download_transcripts=True
+        transcript_language=transcript_language
     )
 
     # ASSERT
@@ -89,12 +88,43 @@ def test_download_videos_success(MockYoutubeDL):
         'writethumbnail': True,
         'writesubtitles': True,
         'writeautomaticsub': True,
-        'subtitleslangs': ['en'],
+        'subtitleslangs': [transcript_language],
     }
     MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+    mock_instance.download.assert_called_once_with([v.webpage_url for v in videos_to_download])
 
-    video_urls = [v.webpage_url for v in videos_to_download]
-    mock_instance.download.assert_called_once_with(video_urls)
+
+@patch('yt_dlp.YoutubeDL')
+def test_download_videos_without_transcripts(MockYoutubeDL):
+    """
+    GIVEN a list of Video models and transcript_language is None
+    WHEN download_videos is called
+    THEN it should call yt-dlp without any subtitle options.
+    """
+    # ARRANGE
+    videos_to_download = [
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+    ]
+    output_path = "/fake/path"
+
+    mock_instance = MagicMock()
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+    repo = TikTokRepository()
+
+    # ACT
+    repo.download_videos(
+        videos=videos_to_download,
+        output_path=output_path,
+        transcript_language=None
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+    mock_instance.download.assert_called_once_with([v.webpage_url for v in videos_to_download])
 
 
 @patch('yt_dlp.YoutubeDL')
@@ -169,7 +199,7 @@ def test_download_videos_empty_list(MockYoutubeDL):
     repo = TikTokRepository()
 
     # ACT
-    repo.download_videos(videos=[], output_path="/tmp", download_transcripts=False)
+    repo.download_videos(videos=[], output_path="/tmp", transcript_language=None)
 
     # ASSERT
     MockYoutubeDL.assert_not_called()
