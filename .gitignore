@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # C extensions
 *.so
@@ -61,6 +64,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+
 # Flask stuff:
 instance/
 .webassets-cache
@@ -102,6 +106,7 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyderworkspace
+.spyproject
 
 # Rope project settings
 .ropeproject
