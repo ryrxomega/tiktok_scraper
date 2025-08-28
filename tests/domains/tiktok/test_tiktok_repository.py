@@ -84,6 +84,7 @@ def test_download_videos_with_transcript_language(MockYoutubeDL):
 
     # ASSERT
     expected_ydl_opts = {
+        'quiet': True,
         'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
         'writesubtitles': True,
@@ -121,6 +122,7 @@ def test_download_videos_with_concurrency(MockYoutubeDL):
 
     # ASSERT
     expected_ydl_opts = {
+        'quiet': True,
         'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
         'concurrent_fragment_downloads': 5,
@@ -155,6 +157,7 @@ def test_download_videos_without_transcripts(MockYoutubeDL):
 
     # ASSERT
     expected_ydl_opts = {
+        'quiet': True,
         'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
     }
@@ -224,6 +227,76 @@ def test_fetch_metadata_malformed_entry(MockYoutubeDL):
 
 
 @patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_cookies(MockYoutubeDL):
+    """
+    GIVEN a URL and cookie parameters
+    WHEN fetch_metadata is called
+    THEN it should call yt-dlp with the correct cookie options.
+    """
+    # ARRANGE
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = {}
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+    url = "http://tiktok.com/@testuser"
+    browser = "chrome"
+    cookie_file = "/path/to/cookies.txt"
+
+    # ACT
+    repo.fetch_metadata(url, cookies_from_browser=browser, cookies_file=cookie_file)
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookies_from_browser': browser,
+        'cookiefile': cookie_file,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_download_videos_with_cookies(MockYoutubeDL):
+    """
+    GIVEN a list of videos and cookie parameters
+    WHEN download_videos is called
+    THEN it should call yt-dlp with the correct cookie options.
+    """
+    # ARRANGE
+    videos_to_download = [
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+    ]
+    output_path = "/fake/path"
+    browser = "firefox"
+    cookie_file = "/another/path/to/cookies.txt"
+
+    mock_instance = MagicMock()
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+    repo = TikTokRepository()
+
+    # ACT
+    repo.download_videos(
+        videos=videos_to_download,
+        output_path=output_path,
+        transcript_language=None,
+        cookies_from_browser=browser,
+        cookies_file=cookie_file,
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'cookies_from_browser': browser,
+        'cookiefile': cookie_file,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
 def test_download_videos_with_sleep_intervals(MockYoutubeDL):
     """
     GIVEN a list of Video models and sleep intervals
@@ -251,6 +324,7 @@ def test_download_videos_with_sleep_intervals(MockYoutubeDL):
 
     # ASSERT
     expected_ydl_opts = {
+        'quiet': True,
         'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
         'sleep_interval': 5,

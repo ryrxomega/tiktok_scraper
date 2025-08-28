@@ -42,7 +42,11 @@ def test_download_videos_success(
     mock_filter_instance.apply_filters.return_value = [mock_video]
 
     # Act
-    result = download_videos(tiktok_url="http://tiktok.com/testvideo")
+    result = download_videos(
+        tiktok_url="http://tiktok.com/testvideo",
+        cookies_from_browser=None,
+        cookies_file=None,
+    )
 
     # Assert
     assert result == [mock_video]
@@ -73,13 +77,71 @@ def test_download_videos_metadata_only(
     mock_filter_instance.apply_filters.return_value = [mock_video]
 
     # Act
-    result = download_videos(tiktok_url="http://tiktok.com/testvideo", metadata_only=True)
+    result = download_videos(
+        tiktok_url="http://tiktok.com/testvideo",
+        metadata_only=True,
+        cookies_from_browser=None,
+        cookies_file=None,
+    )
 
     # Assert
     assert result == [mock_video]
     mock_repo_instance.fetch_metadata.assert_called_once()
     mock_filter_instance.apply_filters.assert_called_once()
     mock_repo_instance.download_videos.assert_not_called()
+
+
+@patch('tiktok_downloader.main.ConfigRepository')
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.main.TikTokRepository')
+@patch('tiktok_downloader.main.FilterService')
+def test_download_videos_with_cookies(
+    mock_filter_service,
+    mock_tiktok_repo,
+    mock_config_service,
+    mock_config_repo,
+    mock_video,
+):
+    """
+    Test that `download_videos` correctly passes cookie settings to the repository.
+    """
+    # Arrange
+    mock_repo_instance = mock_tiktok_repo.return_value
+    mock_repo_instance.fetch_metadata.return_value = [mock_video]
+    mock_filter_instance = mock_filter_service.return_value
+    mock_filter_instance.apply_filters.return_value = [mock_video]
+    mock_config_service.return_value.load_config.return_value.output_path = '.'
+    mock_config_service.return_value.load_config.return_value.transcripts = False
+    mock_config_service.return_value.load_config.return_value.transcript_language = None
+    mock_config_service.return_value.load_config.return_value.concurrent_downloads = 1
+    mock_config_service.return_value.load_config.return_value.min_sleep_interval = None
+    mock_config_service.return_value.load_config.return_value.max_sleep_interval = None
+    browser = "chrome"
+    cookie_file = "/path/to/cookies.txt"
+
+    # Act
+    download_videos(
+        tiktok_url="http://tiktok.com/testvideo",
+        cookies_from_browser=browser,
+        cookies_file=cookie_file,
+    )
+
+    # Assert
+    mock_repo_instance.fetch_metadata.assert_called_once_with(
+        url="http://tiktok.com/testvideo",
+        cookies_from_browser=browser,
+        cookies_file=cookie_file,
+    )
+    mock_repo_instance.download_videos.assert_called_once_with(
+        videos=[mock_video],
+        output_path='.',
+        transcript_language=None,
+        concurrent_downloads=1,
+        min_sleep_interval=None,
+        max_sleep_interval=None,
+        cookies_from_browser=browser,
+        cookies_file=cookie_file,
+    )
 
 
 def test_download_videos_no_url_raises_error():

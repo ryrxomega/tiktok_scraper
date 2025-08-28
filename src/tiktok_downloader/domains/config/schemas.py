@@ -24,3 +24,5 @@ class Config(BaseModel):
     concurrent_downloads: Optional[int] = None
     min_sleep_interval: Optional[int] = None
     max_sleep_interval: Optional[int] = None
+    cookies_from_browser: Optional[str] = None
+    cookies_file: Optional[str] = None

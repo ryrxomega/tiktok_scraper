@@ -116,6 +116,7 @@ def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigServ
     assert "Downloading 1 video(s)..." in result.output
 
     expected_opts = {
+        'quiet': True,
         'outtmpl': '/tmp/downloads/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
         'writesubtitles': True,
