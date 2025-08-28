@@ -15,7 +15,7 @@ video_metadata_strategy = st.builds(
 # Strategy for a list of videos
 videos_strategy = st.lists(video_metadata_strategy).map(
     # Ensure uniqueness of IDs for hashing
-    lambda l: list({v.id: v for v in l}.values())
+    lambda video_list: list({v.id: v for v in video_list}.values())
 )
 
 
