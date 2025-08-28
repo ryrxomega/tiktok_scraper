@@ -4,10 +4,12 @@ Defines the command-line interface for the TikTok Downloader.
 This module uses the `click` library to create a user-friendly CLI
 and orchestrates the application's services to perform its functions.
 """
+import logging
 from typing import List, Optional
 import click
 
 from .domains.tiktok.models import Video
+from .log import setup_logging
 from .main import download_videos
 
 
@@ -39,6 +41,12 @@ def _display_metadata(videos: List[Video]):
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
+@click.option(
+    '--verbose',
+    '-v',
+    count=True,
+    help='Enable verbose logging. Use -v for INFO, -vv for DEBUG.',
+)
 def main(
     tiktok_url: Optional[str],
     from_file: Optional[str],
@@ -48,15 +56,18 @@ def main(
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
+    verbose: int,
 ):
     """
     A command-line tool to download TikTok videos and their metadata
     based on user-defined filters.
     You must provide either a TIKTOK_URL or the --from-file option.
     """
+    setup_logging(verbose)
+    logging.debug(f"CLI arguments: {locals()}")
     try:
         if tiktok_url or from_file:
-            click.echo("Fetching metadata...")
+            logging.info("Fetching metadata...")
 
         filtered_videos = download_videos(
             tiktok_url=tiktok_url,
@@ -68,20 +79,20 @@ def main(
             transcript_language=transcript_language,
             metadata_only=metadata_only,
         )
-        click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
+        logging.info(f"Found {len(filtered_videos)} videos that match the criteria.")
 
         if metadata_only:
             _display_metadata(filtered_videos)
         else:
             if not filtered_videos:
-                click.echo("No videos to download.")
+                logging.info("No videos to download.")
                 return
-            click.echo(f"Downloading {len(filtered_videos)} video(s)...")
-            click.echo("Download complete.")
+            logging.info(f"Downloading {len(filtered_videos)} video(s)...")
+            logging.info("Download complete.")
 
     except ValueError as e:
-        click.echo(f"Error: {e}", err=True)
+        logging.error(f"Error: {e}")
         raise click.Abort()
     except Exception as e:
-        click.echo(f"An unexpected error occurred: {e}", err=True)
+        logging.error(f"An unexpected error occurred: {e}", exc_info=True)
         raise click.Abort()

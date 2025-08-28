@@ -28,7 +28,7 @@ MOCK_METADATA = {
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
-def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
+def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService, caplog):
     """
     GIVEN a mocked yt-dlp response
     WHEN the CLI is invoked with --metadata-only and no filters
@@ -43,12 +43,12 @@ def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
     runner = CliRunner()
 
     # ACT
-    result = runner.invoke(main, [VIDEO_URL, '--metadata-only'])
+    result = runner.invoke(main, [VIDEO_URL, '--metadata-only', '-v'])
 
     # ASSERT
     assert result.exit_code == 0, result.output
-    assert "Fetching metadata..." in result.output
-    assert "Found 1 videos that match the criteria." in result.output
+    assert "Fetching metadata..." in caplog.text
+    assert "Found 1 videos that match the criteria." in caplog.text
     assert f"ID:          {VIDEO_ID}" in result.output
     assert "Title:       A test video title" in result.output
     assert "Likes:       100" in result.output
@@ -60,7 +60,7 @@ def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
-def test_cli_integration_download(MockYoutubeDL, MockConfigService):
+def test_cli_integration_download(MockYoutubeDL, MockConfigService, caplog):
     """
     GIVEN a mocked yt-dlp response
     WHEN the CLI is invoked for download with no filters
@@ -76,19 +76,19 @@ def test_cli_integration_download(MockYoutubeDL, MockConfigService):
     runner = CliRunner()
 
     # ACT
-    result = runner.invoke(main, [VIDEO_URL, '--output-path', '/tmp/downloads'])
+    result = runner.invoke(main, [VIDEO_URL, '--output-path', '/tmp/downloads', '-v'])
 
     # ASSERT
     assert result.exit_code == 0, result.output
-    assert "Downloading 1 video(s)..." in result.output
-    assert "Download complete." in result.output
+    assert "Downloading 1 video(s)..." in caplog.text
+    assert "Download complete." in caplog.text
     mock_ydl_instance.download.assert_called_once_with([VIDEO_URL])
 
 
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
-def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigService):
+def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigService, caplog):
     """
     GIVEN a mocked yt-dlp response
     WHEN the CLI is invoked for download with transcript options
@@ -108,12 +108,13 @@ def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigServ
         VIDEO_URL,
         '--output-path', '/tmp/downloads',
         '--transcripts',
-        '--transcript-language', 'es'
+        '--transcript-language', 'es',
+        '-v'
     ])
 
     # ASSERT
     assert result.exit_code == 0, result.output
-    assert "Downloading 1 video(s)..." in result.output
+    assert "Downloading 1 video(s)..." in caplog.text
 
     expected_opts = {
         'outtmpl': '/tmp/downloads/%(title)s [%(id)s].%(ext)s',
@@ -128,7 +129,7 @@ def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigServ
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
-def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
+def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService, caplog):
     """
     GIVEN a video with missing (but not essential) metadata
     WHEN the CLI is invoked
@@ -154,19 +155,20 @@ def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     runner = CliRunner()
 
     # ACT (no filters)
-    result = runner.invoke(main, [VIDEO_URL, '--metadata-only'])
+    result = runner.invoke(main, [VIDEO_URL, '--metadata-only', '-v'])
 
     # ASSERT (no filters)
     assert result.exit_code == 0, result.output
-    assert "Found 1 videos that match the criteria." in result.output
+    assert "Found 1 videos that match the criteria." in caplog.text
     assert f"ID:          {VIDEO_ID}" in result.output
     assert "Title:       None" in result.output
     assert "Likes:       None" in result.output
     assert "Views:       1000" in result.output
 
     # ACT (with like filter)
-    result_filtered = runner.invoke(main, [VIDEO_URL, '--metadata-only', '--min-likes', '1'])
+    caplog.clear()
+    result_filtered = runner.invoke(main, [VIDEO_URL, '--metadata-only', '--min-likes', '1', '-v'])
 
     # ASSERT (with like filter)
     assert result_filtered.exit_code == 0, result_filtered.output
-    assert "Found 0 videos that match the criteria." in result_filtered.output
+    assert "Found 0 videos that match the criteria." in caplog.text
