@@ -4,10 +4,13 @@ Defines the command-line interface for the TikTok Downloader.
 This module uses the `click` library to create a user-friendly CLI
 and orchestrates the application's services to perform its functions.
 """
+import logging
 from typing import List, Optional
+
 import click
 
 from .domains.tiktok.models import Video
+from .logging import setup_logging
 from .main import download_videos
 
 
@@ -39,6 +42,7 @@ def _display_metadata(videos: List[Video]):
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
+@click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
 def main(
     tiktok_url: Optional[str],
     from_file: Optional[str],
@@ -48,12 +52,22 @@ def main(
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
+    verbose: int,
 ):
     """
     A command-line tool to download TikTok videos and their metadata
     based on user-defined filters.
     You must provide either a TIKTOK_URL or the --from-file option.
     """
+    # 1. Configure logging
+    if verbose == 1:
+        log_level = logging.INFO
+    elif verbose >= 2:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.WARNING
+    setup_logging(log_level)
+
     try:
         if tiktok_url or from_file:
             click.echo("Fetching metadata...")
