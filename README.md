@@ -24,7 +24,7 @@ graph TB
     end
 
     subgraph App[CLI Application]
-        CLI[Command-Line Interface\(click)]
+        CLI[Command-Line Interface (click)]
 
         subgraph Core Services
             Filter[Filter & Policy Engine]
