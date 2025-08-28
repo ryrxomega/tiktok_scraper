@@ -21,3 +21,6 @@ class Config(BaseModel):
     min_views: Optional[int] = None
     transcripts: Optional[bool] = None
     transcript_language: Optional[str] = None
+    concurrent_downloads: Optional[int] = None
+    min_sleep_interval: Optional[int] = None
+    max_sleep_interval: Optional[int] = None

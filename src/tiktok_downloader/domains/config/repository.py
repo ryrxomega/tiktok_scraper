@@ -45,6 +45,14 @@ class ConfigRepository:
                 settings["min_views"] = defaults.getint("min_views")
             if "transcripts" in defaults:
                 settings["transcripts"] = defaults.getboolean("transcripts")
+            if "transcript_language" in defaults:
+                settings["transcript_language"] = defaults.get("transcript_language")
+            if "concurrent_downloads" in defaults:
+                settings["concurrent_downloads"] = defaults.getint("concurrent_downloads")
+            if "min_sleep_interval" in defaults:
+                settings["min_sleep_interval"] = defaults.getint("min_sleep_interval")
+            if "max_sleep_interval" in defaults:
+                settings["max_sleep_interval"] = defaults.getint("max_sleep_interval")
 
         # Pydantic will validate the types upon instantiation.
         return Config(**settings)
