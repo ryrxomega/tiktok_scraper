@@ -78,7 +78,7 @@ Every change will be evaluated against a set of objective quality metrics. A cha
 -   **Test Types:** New features must be accompanied by both **unit tests** for individual components and **integration tests** that verify the entire workflow.
 
 ### 3.2. Code Health
--   **Linting & Typing:** The code must pass both `ruff` and `mypy` with **zero errors or warnings**.
+-   **Linting & Typing:** The code must pass both `ruff` and `mypy` with **zero errors or warnings**. The `mypy` configuration includes the official Pydantic plugin, which is configured in `pyproject.toml`.
 -   **Code Complexity:** The cyclomatic complexity of any function must not exceed **10**, as measured by `radon`. Functions exceeding this limit must be refactored.
 -   **Anti-Patterns:** The code must be free of known anti-patterns. The official reference for this is **The Hitchhiker's Guide to Python** (docs.python-guide.org), particularly its section on "Writing Great Python Code".
 
