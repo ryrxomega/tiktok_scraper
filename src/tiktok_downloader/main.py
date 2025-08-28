@@ -19,6 +19,13 @@ from .domains.tiktok.services import FilterService
 logger = logging.getLogger(__name__)
 
 
+def _resolve_setting(cli_option: Any, config_option: Any, default: Any = None) -> Any:
+    """Helper to resolve a single setting, giving precedence to the CLI option."""
+    if cli_option is not None:
+        return cli_option
+    return config_option if config_option is not None else default
+
+
 def _resolve_settings(
     config: Config,
     output_path: Optional[str],
@@ -29,6 +36,8 @@ def _resolve_settings(
     concurrent_downloads: int,
     min_sleep_interval: Optional[int],
     max_sleep_interval: Optional[int],
+    cookies: Optional[str],
+    cookies_from_browser: Optional[str],
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -36,23 +45,19 @@ def _resolve_settings(
     CLI options always take precedence over settings from the config file.
     """
     resolved_settings = {
-        'output_path': output_path or config.output_path or '.',
-        'min_likes': min_likes if min_likes is not None else config.min_likes,
-        'min_views': min_views if min_views is not None else config.min_views,
-        'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
-        'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
-        'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
+        'output_path': _resolve_setting(output_path, config.output_path, '.'),
+        'min_likes': _resolve_setting(min_likes, config.min_likes),
+        'min_views': _resolve_setting(min_views, config.min_views),
+        'concurrent_downloads': _resolve_setting(concurrent_downloads, config.concurrent_downloads, 1),
+        'min_sleep_interval': _resolve_setting(min_sleep_interval, config.min_sleep_interval),
+        'max_sleep_interval': _resolve_setting(max_sleep_interval, config.max_sleep_interval),
+        'cookies': _resolve_setting(cookies, config.cookies),
+        'cookies_from_browser': _resolve_setting(cookies_from_browser, config.cookies_from_browser),
     }
 
-    # Determine if transcripts should be downloaded
-    if download_transcripts is not None:
-        transcripts_enabled = download_transcripts
-    else:
-        transcripts_enabled = config.transcripts or False
-
-    # Set transcript language if enabled
+    transcripts_enabled = _resolve_setting(download_transcripts, config.transcripts, False)
     if transcripts_enabled:
-        resolved_settings['transcript_language'] = transcript_language or config.transcript_language
+        resolved_settings['transcript_language'] = _resolve_setting(transcript_language, config.transcript_language, 'en-US')
     else:
         resolved_settings['transcript_language'] = None
 
@@ -96,6 +101,8 @@ def download_videos(
     concurrent_downloads: int = 1,
     min_sleep_interval: Optional[int] = None,
     max_sleep_interval: Optional[int] = None,
+    cookies: Optional[str] = None,
+    cookies_from_browser: Optional[str] = None,
 ) -> List[Video]:
     """
     The main entry point for the TikTok Downloader application.
@@ -144,6 +151,8 @@ def download_videos(
         concurrent_downloads,
         min_sleep_interval,
         max_sleep_interval,
+        cookies,
+        cookies_from_browser,
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
@@ -153,7 +162,11 @@ def download_videos(
     for url in urls:
         logger.debug("Fetching from URL: %s", url)
         try:
-            all_videos.extend(repo.fetch_metadata(url))
+            all_videos.extend(repo.fetch_metadata(
+                url,
+                cookies=settings['cookies'],
+                cookies_from_browser=settings['cookies_from_browser']
+            ))
         except Exception as exc:
             logger.error("Error fetching metadata from URL %s: %s", url, exc)
     logger.info("Fetched metadata for a total of %d video(s).", len(all_videos))
@@ -178,6 +191,8 @@ def download_videos(
             concurrent_downloads=settings.get('concurrent_downloads', 1),
             min_sleep_interval=settings['min_sleep_interval'],
             max_sleep_interval=settings['max_sleep_interval'],
+            cookies=settings['cookies'],
+            cookies_from_browser=settings['cookies_from_browser'],
         )
         logger.info("Download complete.")
     else:
