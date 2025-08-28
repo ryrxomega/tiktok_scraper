@@ -39,7 +39,7 @@ def test_fetch_metadata_success(MockYoutubeDL):
     url = "http://tiktok.com/@testuser"
 
     # ACT
-    videos = repo.fetch_metadata(url)
+    videos = repo.fetch_metadata(url, cookies=None, cookies_from_browser=None)
 
     # ASSERT
     assert len(videos) == 2
@@ -79,7 +79,9 @@ def test_download_videos_with_transcript_language(MockYoutubeDL):
     repo.download_videos(
         videos=videos_to_download,
         output_path=output_path,
-        transcript_language=transcript_language
+        transcript_language=transcript_language,
+        cookies=None,
+        cookies_from_browser=None
     )
 
     # ASSERT
@@ -115,7 +117,9 @@ def test_download_videos_without_transcripts(MockYoutubeDL):
     repo.download_videos(
         videos=videos_to_download,
         output_path=output_path,
-        transcript_language=None
+        transcript_language=None,
+        cookies=None,
+        cookies_from_browser=None
     )
 
     # ASSERT
@@ -150,7 +154,7 @@ def test_fetch_metadata_single_video(MockYoutubeDL):
     url = "http://tiktok.com/video/98765"
 
     # ACT
-    videos = repo.fetch_metadata(url)
+    videos = repo.fetch_metadata(url, cookies=None, cookies_from_browser=None)
 
     # ASSERT
     assert len(videos) == 1
@@ -180,12 +184,140 @@ def test_fetch_metadata_malformed_entry(MockYoutubeDL):
     repo = TikTokRepository()
 
     # ACT
-    videos = repo.fetch_metadata("http://tiktok.com/@testuser")
+    videos = repo.fetch_metadata("http://tiktok.com/@testuser", cookies=None, cookies_from_browser=None)
 
     # ASSERT
     assert len(videos) == 2
     assert videos[0].id == '123'
     assert videos[1].id == '789'
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_download_videos_with_cookies_from_browser(MockYoutubeDL):
+    """
+    GIVEN a list of Video models and a browser name
+    WHEN download_videos is called
+    THEN it should call yt-dlp with the correct cookies_from_browser option.
+    """
+    # ARRANGE
+    videos_to_download = [
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+    ]
+    output_path = "/fake/path"
+
+    mock_instance = MagicMock()
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+    repo = TikTokRepository()
+
+    # ACT
+    repo.download_videos(
+        videos=videos_to_download,
+        output_path=output_path,
+        transcript_language=None,
+        cookies=None,
+        cookies_from_browser="chrome",
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'cookiesfrombrowser': ("chrome",),
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_cookies_from_browser(MockYoutubeDL):
+    """
+    GIVEN a URL and a browser name
+    WHEN fetch_metadata is called
+    THEN it should call yt-dlp with the correct cookies_from_browser option.
+    """
+    # ARRANGE
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = {}
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+    url = "http://tiktok.com/@testuser"
+
+    # ACT
+    repo.fetch_metadata(url, cookies=None, cookies_from_browser="chrome")
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookiesfrombrowser': ("chrome",),
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_download_videos_with_cookies(MockYoutubeDL):
+    """
+    GIVEN a list of Video models and a cookies path
+    WHEN download_videos is called
+    THEN it should call yt-dlp with the correct cookie option.
+    """
+    # ARRANGE
+    videos_to_download = [
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+    ]
+    output_path = "/fake/path"
+    cookies_path = "/path/to/cookies.txt"
+
+    mock_instance = MagicMock()
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+    repo = TikTokRepository()
+
+    # ACT
+    repo.download_videos(
+        videos=videos_to_download,
+        output_path=output_path,
+        transcript_language=None,
+        cookies=cookies_path,
+        cookies_from_browser=None,
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'cookiefile': cookies_path,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_cookies(MockYoutubeDL):
+    """
+    GIVEN a URL and a cookies path
+    WHEN fetch_metadata is called
+    THEN it should call yt-dlp with the correct cookie option.
+    """
+    # ARRANGE
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = {}
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+    url = "http://tiktok.com/@testuser"
+    cookies_path = "/path/to/cookies.txt"
+
+    # ACT
+    repo.fetch_metadata(url, cookies=cookies_path, cookies_from_browser=None)
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookiefile': cookies_path,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
 
 
 @patch('yt_dlp.YoutubeDL')
@@ -199,7 +331,7 @@ def test_download_videos_empty_list(MockYoutubeDL):
     repo = TikTokRepository()
 
     # ACT
-    repo.download_videos(videos=[], output_path="/tmp", transcript_language=None)
+    repo.download_videos(videos=[], output_path="/tmp", transcript_language=None, cookies=None, cookies_from_browser=None)
 
     # ASSERT
     MockYoutubeDL.assert_not_called()
@@ -227,7 +359,7 @@ def test_fetch_metadata_with_empty_entry(MockYoutubeDL):
     repo = TikTokRepository()
 
     # ACT
-    videos = repo.fetch_metadata("http://tiktok.com/@testuser")
+    videos = repo.fetch_metadata("http://tiktok.com/@testuser", cookies=None, cookies_from_browser=None)
 
     # ASSERT
     assert len(videos) == 2

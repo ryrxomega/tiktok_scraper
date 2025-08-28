@@ -45,6 +45,10 @@ class ConfigRepository:
                 settings["min_views"] = defaults.getint("min_views")
             if "transcripts" in defaults:
                 settings["transcripts"] = defaults.getboolean("transcripts")
+            if "cookies" in defaults:
+                settings["cookies"] = defaults.get("cookies")
+            if "cookies_from_browser" in defaults:
+                settings["cookies_from_browser"] = defaults.get("cookies_from_browser")
 
         # Pydantic will validate the types upon instantiation.
         return Config(**settings)

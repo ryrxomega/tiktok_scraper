@@ -170,3 +170,84 @@ def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     # ASSERT (with like filter)
     assert result_filtered.exit_code == 0, result_filtered.output
     assert "Found 0 videos that match the criteria." in result_filtered.output
+
+
+@pytest.mark.integration
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
+def test_cli_integration_with_cookies(MockYoutubeDL, MockConfigService, tmp_path):
+    """
+    GIVEN a mocked yt-dlp response and a cookies file
+    WHEN the CLI is invoked with the --cookies option
+    THEN it should call yt-dlp with the correct cookie option.
+    """
+    # ARRANGE
+    cookies_file = tmp_path / "cookies.txt"
+    cookies_file.touch()
+
+    mock_ydl_instance = MagicMock()
+    mock_ydl_instance.extract_info.return_value = MOCK_METADATA
+    MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
+    MockConfigService.return_value.load_config.return_value = Config()
+
+    runner = CliRunner()
+
+    # ACT
+    result = runner.invoke(main, [VIDEO_URL, '--cookies', str(cookies_file)])
+
+    # ASSERT
+    assert result.exit_code == 0, result.output
+
+    # Check that extract_info was called with the cookie file
+    expected_extract_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookiefile': str(cookies_file),
+    }
+    # The mock was called twice, once for extract_info and once for download
+    # We check the first call for extract_info options.
+    call_args, _ = MockYoutubeDL.call_args_list[0]
+    assert call_args[0] == expected_extract_opts
+
+    # Check that download was called with the cookie file
+    expected_download_opts = {
+        'outtmpl': './%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'cookiefile': str(cookies_file),
+    }
+    call_args, _ = MockYoutubeDL.call_args_list[1]
+    assert call_args[0] == expected_download_opts
+
+
+@pytest.mark.integration
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
+def test_cli_integration_with_cookies_from_browser(MockYoutubeDL, MockConfigService):
+    """
+    GIVEN a mocked yt-dlp response
+    WHEN the CLI is invoked with the --cookies-from-browser option
+    THEN it should call yt-dlp with the correct cookie option.
+    """
+    # ARRANGE
+    mock_ydl_instance = MagicMock()
+    mock_ydl_instance.extract_info.return_value = MOCK_METADATA
+    MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
+    MockConfigService.return_value.load_config.return_value = Config()
+
+    runner = CliRunner()
+
+    # ACT
+    result = runner.invoke(main, [VIDEO_URL, '--cookies-from-browser', 'chrome'])
+
+    # ASSERT
+    assert result.exit_code == 0, result.output
+
+    expected_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookiesfrombrowser': ('chrome',),
+    }
+    call_args, _ = MockYoutubeDL.call_args_list[0]
+    assert call_args[0] == expected_opts

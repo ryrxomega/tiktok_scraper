@@ -42,6 +42,8 @@ def _display_metadata(videos: List[Video]):
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
+@click.option('--cookies', type=click.Path(exists=True, dir_okay=False, resolve_path=True), help='Path to a cookies file (e.g., cookies.txt).')
+@click.option('--cookies-from-browser', type=str, help='The browser to extract cookies from (e.g., chrome, firefox).')
 @click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
 def main(
     tiktok_url: Optional[str],
@@ -52,6 +54,8 @@ def main(
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
+    cookies: Optional[str],
+    cookies_from_browser: Optional[str],
     verbose: int,
 ):
     """
@@ -60,13 +64,16 @@ def main(
     You must provide either a TIKTOK_URL or the --from-file option.
     """
     # 1. Configure logging
-    if verbose == 1:
-        log_level = logging.INFO
-    elif verbose >= 2:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.WARNING
+    log_levels = {
+        0: logging.WARNING,
+        1: logging.INFO,
+        2: logging.DEBUG,
+    }
+    log_level = log_levels.get(verbose, logging.DEBUG)
     setup_logging(log_level)
+
+    if cookies and cookies_from_browser:
+        raise click.UsageError("Options --cookies and --cookies-from-browser are mutually exclusive.")
 
     try:
         if tiktok_url or from_file:
@@ -81,6 +88,8 @@ def main(
             download_transcripts=download_transcripts,
             transcript_language=transcript_language,
             metadata_only=metadata_only,
+            cookies=cookies,
+            cookies_from_browser=cookies_from_browser,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
 

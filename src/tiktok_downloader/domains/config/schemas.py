@@ -21,3 +21,5 @@ class Config(BaseModel):
     min_views: Optional[int] = None
     transcripts: Optional[bool] = None
     transcript_language: Optional[str] = None
+    cookies: Optional[str] = None
+    cookies_from_browser: Optional[str] = None

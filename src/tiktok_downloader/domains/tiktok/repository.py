@@ -27,7 +27,7 @@ class TikTokRepository:
             webpage_url=schema.webpage_url,
         )
 
-    def fetch_metadata(self, url: str) -> List[Video]:
+    def fetch_metadata(self, url: str, cookies: str | None, cookies_from_browser: str | None) -> List[Video]:
         """
         Fetches video metadata from a given TikTok URL.
 
@@ -37,6 +37,8 @@ class TikTokRepository:
 
         Args:
             url: The TikTok URL to fetch metadata from.
+            cookies: The path to a cookies file.
+            cookies_from_browser: The browser to extract cookies from.
 
         Returns:
             A list of Video domain models, or an empty list if no videos are found.
@@ -46,6 +48,11 @@ class TikTokRepository:
             'extract_flat': True,
             'force_generic_extractor': True,
         }
+
+        if cookies:
+            ydl_opts['cookiefile'] = cookies
+        if cookies_from_browser:
+            ydl_opts['cookiesfrombrowser'] = (cookies_from_browser,)
 
         videos: List[Video] = []
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -80,6 +87,8 @@ class TikTokRepository:
         videos: List[Video],
         output_path: str,
         transcript_language: str | None,
+        cookies: str | None,
+        cookies_from_browser: str | None,
     ) -> None:
         """
         Downloads the given list of videos using yt-dlp.
@@ -88,6 +97,8 @@ class TikTokRepository:
             videos: A list of Video domain models to download.
             output_path: The directory where files should be saved.
             transcript_language: The language of the transcript to download.
+            cookies: The path to a cookies file.
+            cookies_from_browser: The browser to extract cookies from.
         """
         if not videos:
             return
@@ -96,6 +107,11 @@ class TikTokRepository:
             'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
             'writethumbnail': True,
         }
+
+        if cookies:
+            ydl_opts['cookiefile'] = cookies
+        if cookies_from_browser:
+            ydl_opts['cookiesfrombrowser'] = (cookies_from_browser,)
 
         if transcript_language:
             ydl_opts.update({

@@ -38,6 +38,8 @@ def test_cli_metadata_only_success(mock_download_videos):
         download_transcripts=None,
         transcript_language='en-US',
         metadata_only=True,
+        cookies=None,
+        cookies_from_browser=None,
     )
     assert "Found 2 videos that match the criteria." in result.output
     assert "ID:          123" in result.output
@@ -70,6 +72,8 @@ def test_cli_filtering_options(mock_download_videos):
         download_transcripts=None,
         transcript_language='en-US',
         metadata_only=False,
+        cookies=None,
+        cookies_from_browser=None,
     )
 
 
@@ -101,6 +105,8 @@ def test_cli_from_file(mock_download_videos):
             download_transcripts=None,
             transcript_language='en-US',
             metadata_only=True,
+        cookies=None,
+        cookies_from_browser=None,
         )
 
 
@@ -139,6 +145,8 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         download_transcripts=True,
         transcript_language='es',
         metadata_only=False,
+        cookies=None,
+        cookies_from_browser=None,
     )
 
 
@@ -259,3 +267,28 @@ def test_logging_verbose_flags(mock_download_videos, mock_setup_logging):
     # ACT & ASSERT for -vvv (should still be DEBUG)
     runner.invoke(main, [url, '-vvv'])
     mock_setup_logging.assert_called_with(logging.DEBUG)
+
+
+@patch('tiktok_downloader.cli.download_videos')
+def test_cli_cookie_options_are_mutually_exclusive(mock_download_videos, tmp_path):
+    """
+    GIVEN both --cookies and --cookies-from-browser options
+    WHEN the CLI is invoked
+    THEN it should raise a UsageError.
+    """
+    # ARRANGE
+    cookies_file = tmp_path / "cookies.txt"
+    cookies_file.touch()
+    runner = CliRunner()
+
+    # ACT
+    result = runner.invoke(main, [
+        "some_url",
+        "--cookies", str(cookies_file),
+        "--cookies-from-browser", "chrome"
+    ])
+
+    # ASSERT
+    assert result.exit_code != 0
+    assert "Options --cookies and --cookies-from-browser are mutually exclusive" in result.output
+    mock_download_videos.assert_not_called()
