@@ -86,6 +86,71 @@ Every change will be evaluated against a set of objective quality metrics. A cha
 -   **Docstrings & Comments:** All new code must follow the Literate Programming guidelines in section 2.2.
 -   **README Sync:** The `README.md` and any other architectural documents must be updated to reflect any changes in the code.
 
+### 3.4. Property-Based Testing with Hypothesis
+
+In addition to unit and integration tests, this project mandates the use of **property-based testing** for any component involving complex logic, data processing, or parsing. Property-based tests check that certain properties of your code hold true across a wide range of automatically generated inputs, helping to uncover edge cases that are easy to miss with example-based testing.
+
+We use the [Hypothesis](https://hypothesis.readthedocs.io/) library for this purpose.
+
+**Core Principle:** Instead of writing a test for a single input, you write a test that describes a *property* that should be true for *all* valid inputs. Hypothesis then generates hundreds of diverse examples to try to falsify this property.
+
+**Example:**
+Consider a function `encode_and_decode()` that should be perfectly reversible. A property-based test would look like this:
+
+```python
+from hypothesis import given, strategies as st
+
+# Assumes the function can handle any unicode text
+@given(st.text())
+def test_reversibility(original_string):
+    """
+    Tests that encoding and then decoding a string returns the original value.
+    """
+    encoded = my_encoder(original_string)
+    decoded = my_decoder(encoded)
+    assert original_string == decoded
+```
+
+Hypothesis will generate a wide variety of strings—empty, very long, with strange Unicode characters, etc.—to robustly test this property. If it finds a failing example, it will automatically simplify it to the smallest possible failing case to aid in debugging.
+
+**Requirement:** For any new feature that involves complex data manipulation, at least one property-based test MUST be included.
+
+#### 3.4.1. Advanced Fuzzing with HypoFuzz
+
+For particularly critical or complex parts of the system, we can enhance our property-based tests using [HypoFuzz](https://hypofuzz.com/). HypoFuzz is a tool that applies advanced, coverage-guided fuzzing techniques to your existing Hypothesis test suite.
+
+**When to Use It:**
+-   When you have a complex piece of logic that you want to test more exhaustively than the standard Hypothesis run.
+-   When you have idle compute resources and want to dedicate them to finding deep bugs.
+
+HypoFuzz can be run against your test suite to "farm" for bugs over a long period. It is free for open-source and non-commercial projects. Refer to the [HypoFuzz documentation](https://hypofuzz.com/docs/) to get started.
+
+**CLI Usage:**
+
+HypoFuzz integrates with the `hypothesis` command-line tool. The main command is `hypothesis fuzz`. This command will run indefinitely, so you'll need to stop it with `Ctrl+C`.
+
+*   **Run on all cores:**
+    ```sh
+    hypothesis fuzz
+    ```
+*   **Run on a specific number of cores (e.g., 2):**
+    ```sh
+    hypothesis fuzz -n 2
+    ```
+*   **Run only the dashboard without fuzzing:**
+    ```sh
+    hypothesis fuzz --dashboard-only
+    ```
+*   **Run only fuzzing without the dashboard:**
+    ```sh
+    hypothesis fuzz --no-dashboard
+    ```
+*   **Run against specific tests (e.g., tests with "parse" in the name):**
+    Arguments after `--` are passed to `pytest`.
+    ```sh
+    hypothesis fuzz -- -k parse
+    ```
+
 ## 4. Task Implementation Workflow
 
 Every task, from a new feature to a bug fix, must follow this structured, multi-persona workflow. This ensures that work is thoroughly understood, planned, and executed to the highest standard.
