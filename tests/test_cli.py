@@ -38,6 +38,9 @@ def test_cli_metadata_only_success(mock_download_videos):
         download_transcripts=None,
         transcript_language='en-US',
         metadata_only=True,
+        concurrent_downloads=1,
+        min_sleep_interval=None,
+        max_sleep_interval=None,
     )
     assert "Found 2 videos that match the criteria." in result.output
     assert "ID:          123" in result.output
@@ -70,6 +73,9 @@ def test_cli_filtering_options(mock_download_videos):
         download_transcripts=None,
         transcript_language='en-US',
         metadata_only=False,
+        concurrent_downloads=1,
+        min_sleep_interval=None,
+        max_sleep_interval=None,
     )
 
 
@@ -101,6 +107,9 @@ def test_cli_from_file(mock_download_videos):
             download_transcripts=None,
             transcript_language='en-US',
             metadata_only=True,
+            concurrent_downloads=1,
+            min_sleep_interval=None,
+            max_sleep_interval=None,
         )
 
 
@@ -139,6 +148,9 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         download_transcripts=True,
         transcript_language='es',
         metadata_only=False,
+        concurrent_downloads=1,
+        min_sleep_interval=None,
+        max_sleep_interval=None,
     )
 
 

@@ -42,6 +42,9 @@ def _display_metadata(videos: List[Video]):
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
+@click.option('--concurrent-downloads', type=int, default=1, help='Number of concurrent downloads.')
+@click.option('--min-sleep-interval', type=int, help='Minimum time to wait between downloads.')
+@click.option('--max-sleep-interval', type=int, help='Maximum time to wait between downloads.')
 @click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
 def main(
     tiktok_url: Optional[str],
@@ -52,6 +55,9 @@ def main(
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
+    concurrent_downloads: int,
+    min_sleep_interval: Optional[int],
+    max_sleep_interval: Optional[int],
     verbose: int,
 ):
     """
@@ -81,6 +87,9 @@ def main(
             download_transcripts=download_transcripts,
             transcript_language=transcript_language,
             metadata_only=metadata_only,
+            concurrent_downloads=concurrent_downloads,
+            min_sleep_interval=min_sleep_interval,
+            max_sleep_interval=max_sleep_interval,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
 

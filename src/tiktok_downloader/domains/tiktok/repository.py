@@ -80,6 +80,9 @@ class TikTokRepository:
         videos: List[Video],
         output_path: str,
         transcript_language: str | None,
+        concurrent_downloads: int = 1,
+        min_sleep_interval: int | None = None,
+        max_sleep_interval: int | None = None,
     ) -> None:
         """
         Downloads the given list of videos using yt-dlp.
@@ -88,6 +91,9 @@ class TikTokRepository:
             videos: A list of Video domain models to download.
             output_path: The directory where files should be saved.
             transcript_language: The language of the transcript to download.
+            concurrent_downloads: The number of concurrent fragments to download.
+            min_sleep_interval: Minimum time to wait between downloads.
+            max_sleep_interval: Maximum time to wait between downloads.
         """
         if not videos:
             return
@@ -103,6 +109,13 @@ class TikTokRepository:
                 'writeautomaticsub': True,
                 'subtitleslangs': [transcript_language],
             })
+
+        if concurrent_downloads > 1:
+            ydl_opts['concurrent_fragment_downloads'] = concurrent_downloads
+        if min_sleep_interval:
+            ydl_opts['sleep_interval'] = min_sleep_interval
+        if max_sleep_interval:
+            ydl_opts['max_sleep_interval'] = max_sleep_interval
 
         video_urls = [v.webpage_url for v in videos]
 

@@ -26,6 +26,9 @@ def _resolve_settings(
     min_views: Optional[int],
     download_transcripts: Optional[bool],
     transcript_language: str,
+    concurrent_downloads: int,
+    min_sleep_interval: Optional[int],
+    max_sleep_interval: Optional[int],
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -36,6 +39,9 @@ def _resolve_settings(
         'output_path': output_path or config.output_path or '.',
         'min_likes': min_likes if min_likes is not None else config.min_likes,
         'min_views': min_views if min_views is not None else config.min_views,
+        'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
+        'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
+        'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
     }
 
     # Determine if transcripts should be downloaded
@@ -87,6 +93,9 @@ def download_videos(
     transcript_language: str = 'en-US',
     metadata_only: bool = False,
     config_path: str = "config.ini",
+    concurrent_downloads: int = 1,
+    min_sleep_interval: Optional[int] = None,
+    max_sleep_interval: Optional[int] = None,
 ) -> List[Video]:
     """
     The main entry point for the TikTok Downloader application.
@@ -126,7 +135,15 @@ def download_videos(
     logger.debug("Loaded config: %s", config)
 
     settings = _resolve_settings(
-        config, output_path, min_likes, min_views, download_transcripts, transcript_language
+        config,
+        output_path,
+        min_likes,
+        min_views,
+        download_transcripts,
+        transcript_language,
+        concurrent_downloads,
+        min_sleep_interval,
+        max_sleep_interval,
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
@@ -135,7 +152,10 @@ def download_videos(
     all_videos: List[Video] = []
     for url in urls:
         logger.debug("Fetching from URL: %s", url)
-        all_videos.extend(repo.fetch_metadata(url))
+        try:
+            all_videos.extend(repo.fetch_metadata(url))
+        except Exception as exc:
+            logger.error("Error fetching metadata from URL %s: %s", url, exc)
     logger.info("Fetched metadata for a total of %d video(s).", len(all_videos))
 
     logger.info("Applying filters...")
@@ -155,6 +175,9 @@ def download_videos(
             videos=filtered_videos,
             output_path=settings['output_path'],
             transcript_language=settings['transcript_language'],
+            concurrent_downloads=settings.get('concurrent_downloads', 1),
+            min_sleep_interval=settings['min_sleep_interval'],
+            max_sleep_interval=settings['max_sleep_interval'],
         )
         logger.info("Download complete.")
     else:
