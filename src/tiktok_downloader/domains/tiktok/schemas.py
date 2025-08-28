@@ -1,3 +1,10 @@
+"""
+Defines the Pydantic schemas for the TikTok domain.
+
+These schemas are used for parsing and validating data from external
+sources like the yt-dlp library. They define the expected structure
+of the data at the boundaries of the application.
+"""
 from pydantic import BaseModel
 from typing import Optional
 

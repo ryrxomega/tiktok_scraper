@@ -2,7 +2,9 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from tiktok_downloader.cli import main
-from tiktok_downloader.domains.tiktok.schemas import VideoMetadata
+from tiktok_downloader.domains.config.schemas import Config
+from tiktok_downloader.domains.tiktok.models import Video
+
 
 @patch('tiktok_downloader.cli.FilterService')
 @patch('tiktok_downloader.cli.TikTokRepository')
@@ -14,19 +16,16 @@ def test_cli_metadata_only_success(MockConfigService, MockTikTokRepository, Mock
     THEN it should print the metadata of the videos and not attempt to download.
     """
     # ARRANGE
-    # Mock the ConfigService to return an empty config dictionary
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
-    # Mock the TikTokRepository to return some sample videos
     mock_repo_instance = MockTikTokRepository.return_value
     sample_videos = [
-        VideoMetadata(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='...'),
-        VideoMetadata(id='456', title='Video 2', like_count=20, view_count=200, webpage_url='...')
+        Video(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='...'),
+        Video(id='456', title='Video 2', like_count=20, view_count=200, webpage_url='...')
     ]
     mock_repo_instance.fetch_metadata.return_value = sample_videos
 
-    # Mock the FilterService to return the videos as-is
     mock_filter_instance = MockFilterService.return_value
     mock_filter_instance.apply_filters.return_value = sample_videos
 
@@ -46,9 +45,7 @@ def test_cli_metadata_only_success(MockConfigService, MockTikTokRepository, Mock
     assert "URL:         ..." in result.output
     assert "ID:          456" in result.output
 
-    # Check that download was NOT called
     mock_repo_instance.download_videos.assert_not_called()
-    # Check that fetch_metadata was called
     mock_repo_instance.fetch_metadata.assert_called_once_with(url)
 
 
@@ -63,12 +60,11 @@ def test_cli_filtering_options(MockConfigService, MockTikTokRepository, MockFilt
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
     mock_repo_instance = MockTikTokRepository.return_value
-    # We don't need to return any videos for this test, just an empty list.
     sample_videos = [
-        VideoMetadata(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='...'),
+        Video(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='...'),
     ]
     mock_repo_instance.fetch_metadata.return_value = sample_videos
 
@@ -81,7 +77,6 @@ def test_cli_filtering_options(MockConfigService, MockTikTokRepository, MockFilt
     # ASSERT
     assert result.exit_code == 0
 
-    # Check that apply_filters was called with the correct integer values
     MockFilterService.return_value.apply_filters.assert_called_once_with(
         videos=sample_videos,
         min_likes=100,
@@ -100,7 +95,7 @@ def test_cli_from_file(MockConfigService, MockTikTokRepository, MockFilterServic
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
     mock_repo_instance = MockTikTokRepository.return_value
     mock_repo_instance.fetch_metadata.return_value = []
@@ -115,13 +110,9 @@ def test_cli_from_file(MockConfigService, MockTikTokRepository, MockFilterServic
         with open("urls.txt", "w") as f:
             f.write("\n".join(urls))
 
-        # ACT
         result = runner.invoke(main, ['--from-file', 'urls.txt', '--metadata-only'])
 
-        # ASSERT
         assert result.exit_code == 0
-
-        # Check that fetch_metadata was called for each URL
         assert mock_repo_instance.fetch_metadata.call_count == 2
         mock_repo_instance.fetch_metadata.assert_any_call(urls[0])
         mock_repo_instance.fetch_metadata.assert_any_call(urls[1])
@@ -138,12 +129,12 @@ def test_cli_config_file_integration(MockConfigService, MockTikTokRepository, Mo
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    config_settings = {
-        'min_likes': 500,
-        'min_views': 5000,
-        'output_path': '/config/path',
-        'transcripts': True
-    }
+    config_settings = Config(
+        min_likes=500,
+        min_views=5000,
+        output_path='/config/path',
+        transcripts=True
+    )
     mock_config_instance.load_config.return_value = config_settings
 
     mock_repo_instance = MockTikTokRepository.return_value
@@ -153,13 +144,11 @@ def test_cli_config_file_integration(MockConfigService, MockTikTokRepository, Mo
     url = "http://tiktok.com/@testuser"
 
     # ACT
-    # Invoke with no options, so config values should be used
     result = runner.invoke(main, [url, '--metadata-only'])
 
     # ASSERT
     assert result.exit_code == 0
 
-    # Check that services were called with config values
     MockFilterService.return_value.apply_filters.assert_called_once_with(
         videos=[],
         min_likes=500,
@@ -178,11 +167,11 @@ def test_cli_download_workflow(MockConfigService, MockTikTokRepository, MockFilt
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
     mock_repo_instance = MockTikTokRepository.return_value
     sample_videos = [
-        VideoMetadata(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='url1'),
+        Video(id='123', title='Video 1', like_count=10, view_count=100, webpage_url='url1'),
     ]
     mock_repo_instance.fetch_metadata.return_value = sample_videos
 
@@ -199,7 +188,6 @@ def test_cli_download_workflow(MockConfigService, MockTikTokRepository, MockFilt
     assert result.exit_code == 0
     assert "Downloading 1 video(s) to /my/downloads..." in result.output
 
-    # Check that download_videos was called correctly
     mock_repo_instance.download_videos.assert_called_once_with(
         videos=sample_videos,
         output_path='/my/downloads',
@@ -231,7 +219,7 @@ def test_cli_metadata_only_no_videos(MockConfigService, MockTikTokRepository, Mo
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
     mock_repo_instance = MockTikTokRepository.return_value
     mock_repo_instance.fetch_metadata.return_value = []
@@ -260,7 +248,7 @@ def test_cli_download_no_videos(MockConfigService, MockTikTokRepository):
     """
     # ARRANGE
     mock_config_instance = MockConfigService.return_value
-    mock_config_instance.load_config.return_value = {}
+    mock_config_instance.load_config.return_value = Config()
 
     mock_repo_instance = MockTikTokRepository.return_value
     mock_repo_instance.fetch_metadata.return_value = []

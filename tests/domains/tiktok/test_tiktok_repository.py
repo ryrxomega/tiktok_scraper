@@ -1,17 +1,17 @@
 from unittest.mock import patch, MagicMock
 
 from tiktok_downloader.domains.tiktok.repository import TikTokRepository
-from tiktok_downloader.domains.tiktok.schemas import VideoMetadata
+from tiktok_downloader.domains.tiktok.models import Video
+
 
 @patch('yt_dlp.YoutubeDL')
 def test_fetch_metadata_success(MockYoutubeDL):
     """
     GIVEN a URL
     WHEN fetch_metadata is called
-    THEN it should use yt-dlp to fetch info and return a list of VideoMetadata objects.
+    THEN it should use yt-dlp to fetch info and return a list of Video domain models.
     """
     # ARRANGE
-    # This is a simulation of the data structure yt-dlp returns for a user/hashtag URL
     mock_yt_dlp_output = {
         'entries': [
             {
@@ -31,7 +31,6 @@ def test_fetch_metadata_success(MockYoutubeDL):
         ]
     }
 
-    # Configure the mock to behave like the real yt-dlp library context manager
     mock_instance = MagicMock()
     mock_instance.extract_info.return_value = mock_yt_dlp_output
     MockYoutubeDL.return_value.__enter__.return_value = mock_instance
@@ -43,18 +42,16 @@ def test_fetch_metadata_success(MockYoutubeDL):
     videos = repo.fetch_metadata(url)
 
     # ASSERT
-    # Check that the output is correctly parsed into our Pydantic models
     assert len(videos) == 2
-    assert isinstance(videos[0], VideoMetadata)
+    assert isinstance(videos[0], Video)
     assert videos[0].id == '12345'
     assert videos[0].like_count == 100
     assert videos[1].id == '67890'
     assert videos[1].view_count == 2000
 
-    # Check that yt-dlp was initialized and called correctly
     MockYoutubeDL.assert_called_once_with({
         'quiet': True,
-        'extract_flat': True, # 'flatten' is an alias for this, gets metadata in batches
+        'extract_flat': True,
         'force_generic_extractor': True,
     })
     mock_instance.extract_info.assert_called_once_with(url, download=False)
@@ -63,18 +60,17 @@ def test_fetch_metadata_success(MockYoutubeDL):
 @patch('yt_dlp.YoutubeDL')
 def test_download_videos_success(MockYoutubeDL):
     """
-    GIVEN a list of VideoMetadata objects and an output path
+    GIVEN a list of Video models and an output path
     WHEN download_videos is called
     THEN it should use yt-dlp to download the specified videos.
     """
     # ARRANGE
     videos_to_download = [
-        VideoMetadata(id='12345', title='Video 1', like_count=1, view_count=1, webpage_url='http://.../12345'),
-        VideoMetadata(id='67890', title='Video 2', like_count=2, view_count=2, webpage_url='http://.../67890')
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+        Video(id='67890', title='Video 2', webpage_url='http://.../67890')
     ]
     output_path = "/fake/path/for/downloads"
 
-    # Configure the mock
     mock_instance = MagicMock()
     MockYoutubeDL.return_value.__enter__.return_value = mock_instance
 
@@ -88,7 +84,6 @@ def test_download_videos_success(MockYoutubeDL):
     )
 
     # ASSERT
-    # Check that yt-dlp was initialized with the correct download options
     expected_ydl_opts = {
         'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
         'writethumbnail': True,
@@ -98,7 +93,6 @@ def test_download_videos_success(MockYoutubeDL):
     }
     MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
 
-    # Check that the download function was called with the list of video URLs
     video_urls = [v.webpage_url for v in videos_to_download]
     mock_instance.download.assert_called_once_with(video_urls)
 
@@ -130,7 +124,7 @@ def test_fetch_metadata_single_video(MockYoutubeDL):
 
     # ASSERT
     assert len(videos) == 1
-    assert isinstance(videos[0], VideoMetadata)
+    assert isinstance(videos[0], Video)
     assert videos[0].id == '98765'
 
 
@@ -179,3 +173,33 @@ def test_download_videos_empty_list(MockYoutubeDL):
 
     # ASSERT
     MockYoutubeDL.assert_not_called()
+
+
+@patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_empty_entry(MockYoutubeDL):
+    """
+    GIVEN yt-dlp returns a list with a None entry
+    WHEN fetch_metadata is called
+    THEN it should skip the empty entry and continue processing others.
+    """
+    # ARRANGE
+    mock_yt_dlp_output = {
+        'entries': [
+            {'id': '123', 'title': 'Good Video', 'like_count': 1, 'view_count': 1, 'webpage_url': '...'},
+            None,  # Simulate an empty or problematic entry
+            {'id': '789', 'title': 'Another Good Video', 'like_count': 2, 'view_count': 2, 'webpage_url': '...'}
+        ]
+    }
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = mock_yt_dlp_output
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+
+    # ACT
+    videos = repo.fetch_metadata("http://tiktok.com/@testuser")
+
+    # ASSERT
+    assert len(videos) == 2
+    assert videos[0].id == '123'
+    assert videos[1].id == '789'

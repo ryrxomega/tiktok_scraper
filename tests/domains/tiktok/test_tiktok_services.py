@@ -2,11 +2,11 @@ import pytest
 from hypothesis import given, strategies as st
 
 from tiktok_downloader.domains.tiktok.services import FilterService
-from tiktok_downloader.domains.tiktok.schemas import VideoMetadata
+from tiktok_downloader.domains.tiktok.models import Video
 
-# Strategy for generating VideoMetadata objects
-video_metadata_strategy = st.builds(
-    VideoMetadata,
+# Strategy for generating Video objects for Hypothesis tests
+video_strategy = st.builds(
+    Video,
     id=st.text(),
     title=st.text(),
     like_count=st.integers(min_value=0, max_value=1_000_000),
@@ -15,17 +15,17 @@ video_metadata_strategy = st.builds(
 )
 
 # Strategy for a list of videos
-videos_strategy = st.lists(video_metadata_strategy, min_size=1)
+videos_strategy = st.lists(video_strategy, min_size=1)
 
 
 @pytest.fixture
 def sample_videos():
-    """Provides a sample list of VideoMetadata objects for testing."""
+    """Provides a sample list of Video objects for testing."""
     return [
-        VideoMetadata(id='1', title='Video 1', like_count=100, view_count=1000, webpage_url='...'),
-        VideoMetadata(id='2', title='Video 2', like_count=200, view_count=2000, webpage_url='...'),
-        VideoMetadata(id='3', title='Video 3', like_count=300, view_count=3000, webpage_url='...'),
-        VideoMetadata(id='4', title='Video 4', like_count=400, view_count=4000, webpage_url='...'),
+        Video(id='1', title='Video 1', like_count=100, view_count=1000, webpage_url='...'),
+        Video(id='2', title='Video 2', like_count=200, view_count=2000, webpage_url='...'),
+        Video(id='3', title='Video 3', like_count=300, view_count=3000, webpage_url='...'),
+        Video(id='4', title='Video 4', like_count=400, view_count=4000, webpage_url='...'),
     ]
 
 @given(videos=videos_strategy, min_likes=st.integers(min_value=0))
