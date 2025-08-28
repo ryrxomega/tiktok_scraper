@@ -53,3 +53,24 @@ output_path = /downloads
     assert config.concurrent_downloads is None
     assert config.min_sleep_interval is None
     assert config.max_sleep_interval is None
+
+
+def test_load_from_path_with_no_defaults_section(tmp_path: Path):
+    # Arrange
+    config_content = "[other_section]\nkey=value\n"
+    config_file = tmp_path / "config.ini"
+    config_file.write_text(config_content)
+    repo = ConfigRepository()
+
+    # Act
+    config = repo.load_from_path(config_file)
+
+    # Assert
+    assert config.output_path is None
+    assert config.min_likes is None
+    assert config.min_views is None
+    assert config.transcripts is None
+    assert config.transcript_language is None
+    assert config.concurrent_downloads is None
+    assert config.min_sleep_interval is None
+    assert config.max_sleep_interval is None

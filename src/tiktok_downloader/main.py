@@ -19,6 +19,15 @@ from .domains.tiktok.services import FilterService
 logger = logging.getLogger(__name__)
 
 
+def _resolve_single_setting(cli_value: Any, config_value: Any, default: Any = None) -> Any:
+    """Helper to resolve a single setting, giving precedence to the CLI value."""
+    if cli_value is not None:
+        return cli_value
+    if config_value is not None:
+        return config_value
+    return default
+
+
 def _resolve_settings(
     config: Config,
     output_path: Optional[str],
@@ -38,25 +47,19 @@ def _resolve_settings(
     CLI options always take precedence over settings from the config file.
     """
     resolved_settings = {
-        'output_path': output_path or config.output_path or '.',
-        'min_likes': min_likes if min_likes is not None else config.min_likes,
-        'min_views': min_views if min_views is not None else config.min_views,
-        'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
-        'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
-        'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
-        'cookies_from_browser': cookies_from_browser or config.cookies_from_browser,
-        'cookies_file': cookies_file or config.cookies_file,
+        'output_path': _resolve_single_setting(output_path, config.output_path, '.'),
+        'min_likes': _resolve_single_setting(min_likes, config.min_likes),
+        'min_views': _resolve_single_setting(min_views, config.min_views),
+        'concurrent_downloads': _resolve_single_setting(concurrent_downloads, config.concurrent_downloads, 1),
+        'min_sleep_interval': _resolve_single_setting(min_sleep_interval, config.min_sleep_interval),
+        'max_sleep_interval': _resolve_single_setting(max_sleep_interval, config.max_sleep_interval),
+        'cookies_from_browser': _resolve_single_setting(cookies_from_browser, config.cookies_from_browser),
+        'cookies_file': _resolve_single_setting(cookies_file, config.cookies_file),
     }
 
-    # Determine if transcripts should be downloaded
-    if download_transcripts is not None:
-        transcripts_enabled = download_transcripts
-    else:
-        transcripts_enabled = config.transcripts or False
-
-    # Set transcript language if enabled
+    transcripts_enabled = _resolve_single_setting(download_transcripts, config.transcripts, False)
     if transcripts_enabled:
-        resolved_settings['transcript_language'] = transcript_language or config.transcript_language
+        resolved_settings['transcript_language'] = _resolve_single_setting(transcript_language, config.transcript_language)
     else:
         resolved_settings['transcript_language'] = None
 

@@ -4,6 +4,7 @@ Defines the command-line interface for the TikTok Downloader.
 This module uses the `click` library to create a user-friendly CLI
 and orchestrates the application's services to perform its functions.
 """
+import importlib.metadata
 import logging
 from typing import List, Optional
 
@@ -12,6 +13,9 @@ import click
 from .domains.tiktok.models import Video
 from .logging import setup_logging
 from .main import download_videos
+
+
+__version__ = importlib.metadata.version('tiktok-downloader')
 
 
 def _display_metadata(videos: List[Video]):
@@ -34,6 +38,7 @@ def _display_metadata(videos: List[Video]):
 
 
 @click.command()
+@click.version_option(version=__version__)
 @click.argument('tiktok_url', required=False)
 @click.option('--from-file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), help='Path to a text file containing one TikTok URL per line.')
 @click.option('--output-path', type=click.Path(file_okay=False, writable=True, resolve_path=True), help='Specify the download directory.')
