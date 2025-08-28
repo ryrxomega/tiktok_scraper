@@ -18,7 +18,9 @@ class FilterService:
         Filters a list of videos based on specified criteria.
 
         The filtering is conjunctive (i.e., "AND"). A video must meet all
-        specified criteria to be included in the result.
+        specified criteria to be included in the result. If a video is missing
+        a piece of metadata (e.g., `like_count` is None), it will be excluded
+        by any filter that acts on that metadata.
 
         Args:
             videos: The list of VideoMetadata objects to filter.
@@ -33,12 +35,14 @@ class FilterService:
 
         if min_likes is not None:
             filtered_videos = [
-                video for video in filtered_videos if video.like_count >= min_likes
+                video for video in filtered_videos
+                if video.like_count is not None and video.like_count >= min_likes
             ]
 
         if min_views is not None:
             filtered_videos = [
-                video for video in filtered_videos if video.view_count >= min_views
+                video for video in filtered_videos
+                if video.view_count is not None and video.view_count >= min_views
             ]
 
         return filtered_videos
