@@ -29,6 +29,8 @@ def _resolve_settings(
     concurrent_downloads: int,
     min_sleep_interval: Optional[int],
     max_sleep_interval: Optional[int],
+    cookies_from_browser: Optional[str],
+    cookies_file: Optional[str],
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -42,6 +44,8 @@ def _resolve_settings(
         'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
         'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
         'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
+        'cookies_from_browser': cookies_from_browser or config.cookies_from_browser,
+        'cookies_file': cookies_file or config.cookies_file,
     }
 
     # Determine if transcripts should be downloaded
@@ -96,6 +100,8 @@ def download_videos(
     concurrent_downloads: int = 1,
     min_sleep_interval: Optional[int] = None,
     max_sleep_interval: Optional[int] = None,
+    cookies_from_browser: Optional[str] = None,
+    cookies_file: Optional[str] = None,
 ) -> List[Video]:
     """
     The main entry point for the TikTok Downloader application.
@@ -114,6 +120,8 @@ def download_videos(
         metadata_only: If True, only fetch and return metadata without downloading.
         config_path: Path to the
         configuration file.
+        cookies_from_browser: The browser to extract cookies from.
+        cookies_file: The path to a file containing cookies.
 
     Returns:
         A list of `Video` objects that match the criteria.
@@ -144,6 +152,8 @@ def download_videos(
         concurrent_downloads,
         min_sleep_interval,
         max_sleep_interval,
+        cookies_from_browser,
+        cookies_file,
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
@@ -153,7 +163,13 @@ def download_videos(
     for url in urls:
         logger.debug("Fetching from URL: %s", url)
         try:
-            all_videos.extend(repo.fetch_metadata(url))
+            all_videos.extend(
+                repo.fetch_metadata(
+                    url=url,
+                    cookies_from_browser=settings['cookies_from_browser'],
+                    cookies_file=settings['cookies_file'],
+                )
+            )
         except Exception as exc:
             logger.error("Error fetching metadata from URL %s: %s", url, exc)
     logger.info("Fetched metadata for a total of %d video(s).", len(all_videos))
@@ -178,6 +194,8 @@ def download_videos(
             concurrent_downloads=settings.get('concurrent_downloads', 1),
             min_sleep_interval=settings['min_sleep_interval'],
             max_sleep_interval=settings['max_sleep_interval'],
+            cookies_from_browser=settings['cookies_from_browser'],
+            cookies_file=settings['cookies_file'],
         )
         logger.info("Download complete.")
     else:

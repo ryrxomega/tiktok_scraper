@@ -41,6 +41,8 @@ def test_cli_metadata_only_success(mock_download_videos):
         concurrent_downloads=1,
         min_sleep_interval=None,
         max_sleep_interval=None,
+        cookies_from_browser=None,
+        cookies_file=None,
     )
     assert "Found 2 videos that match the criteria." in result.output
     assert "ID:          123" in result.output
@@ -76,6 +78,8 @@ def test_cli_filtering_options(mock_download_videos):
         concurrent_downloads=1,
         min_sleep_interval=None,
         max_sleep_interval=None,
+        cookies_from_browser=None,
+        cookies_file=None,
     )
 
 
@@ -110,6 +114,8 @@ def test_cli_from_file(mock_download_videos):
             concurrent_downloads=1,
             min_sleep_interval=None,
             max_sleep_interval=None,
+            cookies_from_browser=None,
+            cookies_file=None,
         )
 
 
@@ -151,6 +157,8 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         concurrent_downloads=1,
         min_sleep_interval=None,
         max_sleep_interval=None,
+        cookies_from_browser=None,
+        cookies_file=None,
     )
 
 
@@ -271,3 +279,47 @@ def test_logging_verbose_flags(mock_download_videos, mock_setup_logging):
     # ACT & ASSERT for -vvv (should still be DEBUG)
     runner.invoke(main, [url, '-vvv'])
     mock_setup_logging.assert_called_with(logging.DEBUG)
+
+
+@patch('tiktok_downloader.cli.download_videos')
+def test_cli_cookie_options(mock_download_videos):
+    """
+    GIVEN --cookies-from-browser and --cookies-file options
+    WHEN the CLI is invoked
+    THEN it should call download_videos with the correct cookie values.
+    """
+    # ARRANGE
+    mock_download_videos.return_value = []
+    runner = CliRunner()
+    url = "http://tiktok.com/@testuser"
+    browser = "chrome"
+
+    with runner.isolated_filesystem() as fs:
+        cookie_file = f"{fs}/cookies.txt"
+        with open(cookie_file, "w") as f:
+            f.write("test")
+
+        # ACT
+        result = runner.invoke(main, [
+            url,
+            '--cookies-from-browser', browser,
+            '--cookies-file', cookie_file,
+        ])
+
+        # ASSERT
+        assert result.exit_code == 0
+        mock_download_videos.assert_called_once_with(
+            tiktok_url=url,
+            from_file=None,
+            output_path=None,
+            min_likes=None,
+            min_views=None,
+            download_transcripts=None,
+            transcript_language='en-US',
+            metadata_only=False,
+            concurrent_downloads=1,
+            min_sleep_interval=None,
+            max_sleep_interval=None,
+            cookies_from_browser=browser,
+            cookies_file=cookie_file,
+        )

@@ -100,8 +100,32 @@ Usage: tiktok-downloader [OPTIONS] [TIKTOK_URL]
 - `--min-views INTEGER`: Filter videos with at least this many views.
 - `--transcripts / --no-transcripts`: Enable or disable transcript downloads.
 - `--metadata-only`: Fetch and display metadata without downloading videos.
+- `--cookies-from-browser BROWSER`: The browser to extract cookies from (e.g., chrome, firefox).
+- `--cookies-file FILE`: Path to a file containing cookies in the Netscape format.
 
-### 3.3 Library Usage
+### 3.3 Authentication
+
+For content that requires a login (e.g., private videos, age-restricted content), you can use your browser's cookies.
+
+**Using Cookies from a Browser:**
+
+You can instruct `tiktok-downloader` to use the cookies from a supported browser.
+
+```bash
+tiktok-downloader <URL> --cookies-from-browser chrome
+```
+
+**Using a Cookies File:**
+
+Alternatively, you can provide a path to a cookies file. The file should be in the Netscape HTTP cookie file format. You can generate this file using a browser extension like "Get cookies.txt".
+
+```bash
+tiktok-downloader <URL> --cookies-file /path/to/your/cookies.txt
+```
+
+These options can also be set in the `config.ini` file.
+
+### 3.4 Library Usage
 
 In addition to the CLI, you can use `tiktok-downloader` as a library in your own Python projects. The core functionality is exposed through the `download_videos` function.
 
@@ -142,6 +166,11 @@ output_path = ~/TikTok_Downloads
 min_likes = 10000
 min_views = 100000
 transcripts = true
+transcript_language = en-US
+
+# Optional authentication settings
+# cookies_from_browser = chrome
+# cookies_file = /path/to/cookies.txt
 ```
 
 ## 5) Deployment

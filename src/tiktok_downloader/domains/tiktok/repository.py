@@ -2,7 +2,7 @@
 Repository for the TikTok domain, handling data access and external interactions.
 """
 import yt_dlp
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from .models import Video
 from .schemas import VideoMetadata
@@ -27,7 +27,27 @@ class TikTokRepository:
             webpage_url=schema.webpage_url,
         )
 
-    def fetch_metadata(self, url: str) -> List[Video]:
+    def _get_ydl_opts(
+        self,
+        cookies_from_browser: Optional[str] = None,
+        cookies_file: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Builds the base options dictionary for yt-dlp."""
+        ydl_opts: Dict[str, Any] = {
+            'quiet': True,
+        }
+        if cookies_from_browser:
+            ydl_opts['cookies_from_browser'] = cookies_from_browser
+        if cookies_file:
+            ydl_opts['cookiefile'] = cookies_file
+        return ydl_opts
+
+    def fetch_metadata(
+        self,
+        url: str,
+        cookies_from_browser: Optional[str] = None,
+        cookies_file: Optional[str] = None,
+    ) -> List[Video]:
         """
         Fetches video metadata from a given TikTok URL.
 
@@ -37,15 +57,20 @@ class TikTokRepository:
 
         Args:
             url: The TikTok URL to fetch metadata from.
+            cookies_from_browser: The browser to extract cookies from.
+            cookies_file: The path to a file containing cookies.
 
         Returns:
             A list of Video domain models, or an empty list if no videos are found.
         """
-        ydl_opts: Dict[str, Any] = {
-            'quiet': True,
+        ydl_opts = self._get_ydl_opts(
+            cookies_from_browser=cookies_from_browser,
+            cookies_file=cookies_file,
+        )
+        ydl_opts.update({
             'extract_flat': True,
             'force_generic_extractor': True,
-        }
+        })
 
         videos: List[Video] = []
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -79,10 +104,12 @@ class TikTokRepository:
         self,
         videos: List[Video],
         output_path: str,
-        transcript_language: str | None,
+        transcript_language: Optional[str],
         concurrent_downloads: int = 1,
-        min_sleep_interval: int | None = None,
-        max_sleep_interval: int | None = None,
+        min_sleep_interval: Optional[int] = None,
+        max_sleep_interval: Optional[int] = None,
+        cookies_from_browser: Optional[str] = None,
+        cookies_file: Optional[str] = None,
     ) -> None:
         """
         Downloads the given list of videos using yt-dlp.
@@ -94,14 +121,20 @@ class TikTokRepository:
             concurrent_downloads: The number of concurrent fragments to download.
             min_sleep_interval: Minimum time to wait between downloads.
             max_sleep_interval: Maximum time to wait between downloads.
+            cookies_from_browser: The browser to extract cookies from.
+            cookies_file: The path to a file containing cookies.
         """
         if not videos:
             return
 
-        ydl_opts: Dict[str, Any] = {
+        ydl_opts = self._get_ydl_opts(
+            cookies_from_browser=cookies_from_browser,
+            cookies_file=cookies_file,
+        )
+        ydl_opts.update({
             'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
             'writethumbnail': True,
-        }
+        })
 
         if transcript_language:
             ydl_opts.update({
