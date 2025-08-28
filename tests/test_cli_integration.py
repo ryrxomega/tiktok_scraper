@@ -170,3 +170,51 @@ def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     # ASSERT (with like filter)
     assert result_filtered.exit_code == 0, result_filtered.output
     assert "Found 0 videos that match the criteria." in result_filtered.output
+
+
+@pytest.mark.integration
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
+def test_cli_integration_with_cookies(MockYoutubeDL, MockConfigService):
+    """
+    GIVEN mocked yt-dlp and cookie CLI arguments
+    WHEN the CLI is invoked
+    THEN it should call yt-dlp with the correct cookie options.
+    """
+    # ARRANGE
+    mock_ydl_instance = MagicMock()
+    mock_ydl_instance.extract_info.return_value = MOCK_METADATA
+    MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
+    MockConfigService.return_value.load_config.return_value = Config()
+
+    runner = CliRunner()
+    browser = "chrome"
+
+    with runner.isolated_filesystem() as fs:
+        cookies_file = f"{fs}/cookies.txt"
+        with open(cookies_file, "w") as f:
+            f.write("# Netscape HTTP Cookie File")
+
+        # ACT
+        result = runner.invoke(main, [
+            VIDEO_URL,
+            '--metadata-only',
+            '--cookies', cookies_file,
+            '--cookies-from-browser', browser,
+        ])
+
+        # ASSERT
+        assert result.exit_code == 0, result.output
+
+    # Check that fetch_metadata was called with cookie options
+    expected_fetch_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookies': cookies_file,
+        'cookiesfrombrowser': (browser,),
+    }
+    # The mock was called twice: once for fetch_metadata, once for download_videos
+    # Since we are in metadata_only mode, download_videos is not called.
+    # So we check the first call.
+    MockYoutubeDL.assert_called_with(expected_fetch_opts)

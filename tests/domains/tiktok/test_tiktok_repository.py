@@ -224,6 +224,41 @@ def test_fetch_metadata_malformed_entry(MockYoutubeDL):
 
 
 @patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_cookies(MockYoutubeDL):
+    """
+    GIVEN a URL and cookie parameters
+    WHEN fetch_metadata is called
+    THEN it should call yt-dlp with the correct cookie options.
+    """
+    # ARRANGE
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = {}
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+    url = "http://tiktok.com/@testuser"
+    cookies_file = "/path/to/cookies.txt"
+    cookies_from_browser = "chrome"
+
+    # ACT
+    repo.fetch_metadata(
+        url,
+        cookies=cookies_file,
+        cookies_from_browser=cookies_from_browser
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'cookies': cookies_file,
+        'cookiesfrombrowser': (cookies_from_browser, ),
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
 def test_download_videos_with_sleep_intervals(MockYoutubeDL):
     """
     GIVEN a list of Video models and sleep intervals

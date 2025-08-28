@@ -100,6 +100,8 @@ Usage: tiktok-downloader [OPTIONS] [TIKTOK_URL]
 - `--min-views INTEGER`: Filter videos with at least this many views.
 - `--transcripts / --no-transcripts`: Enable or disable transcript downloads.
 - `--metadata-only`: Fetch and display metadata without downloading videos.
+- `--cookies FILE`: Path to a Netscape-formatted cookie file.
+- `--cookies-from-browser BROWSER`: The browser to load cookies from (e.g., "chrome", "firefox").
 
 ### 3.3 Library Usage
 
@@ -129,6 +131,13 @@ metadata = download_videos(
 for video in metadata:
     print(f"Title: {video.title}, Likes: {video.like_count}")
 
+# Example of using cookies to download from a private account
+private_videos = download_videos(
+    tiktok_url="https://www.tiktok.com/@privateuser",
+    cookies_from_browser="chrome",
+    metadata_only=True
+)
+print(f"Found {len(private_videos)} videos from the private account.")
 ```
 
 ## 4) Configuration

@@ -45,6 +45,8 @@ def _display_metadata(videos: List[Video]):
 @click.option('--concurrent-downloads', type=int, default=1, help='Number of concurrent downloads.')
 @click.option('--min-sleep-interval', type=int, help='Minimum time to wait between downloads.')
 @click.option('--max-sleep-interval', type=int, help='Maximum time to wait between downloads.')
+@click.option('--cookies', type=click.Path(exists=True, dir_okay=False, resolve_path=True), help='Path to a Netscape-formatted cookie file.')
+@click.option('--cookies-from-browser', type=str, help='The browser to load cookies from (e.g., "chrome", "firefox").')
 @click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
 def main(
     tiktok_url: Optional[str],
@@ -58,6 +60,8 @@ def main(
     concurrent_downloads: int,
     min_sleep_interval: Optional[int],
     max_sleep_interval: Optional[int],
+    cookies: Optional[str],
+    cookies_from_browser: Optional[str],
     verbose: int,
 ):
     """
@@ -90,6 +94,8 @@ def main(
             concurrent_downloads=concurrent_downloads,
             min_sleep_interval=min_sleep_interval,
             max_sleep_interval=max_sleep_interval,
+            cookies=cookies,
+            cookies_from_browser=cookies_from_browser,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
 
