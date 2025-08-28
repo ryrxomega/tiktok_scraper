@@ -1,0 +1,2 @@
+[console_scripts]
+tiktok-downloader = tiktok_downloader.cli:main
