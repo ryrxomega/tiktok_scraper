@@ -5,8 +5,9 @@ This module is responsible for orchestrating the fetching, filtering, and
 downloading of TikTok videos. It is designed to be used both by the CLI
 and as a library in other Python applications.
 """
-from typing import List, Optional, Dict, Any
+import logging
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from .domains.config.repository import ConfigRepository
 from .domains.config.schemas import Config
@@ -14,6 +15,8 @@ from .domains.config.services import ConfigService
 from .domains.tiktok.models import Video
 from .domains.tiktok.repository import TikTokRepository
 from .domains.tiktok.services import FilterService
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_settings(
@@ -47,6 +50,7 @@ def _resolve_settings(
     else:
         resolved_settings['transcript_language'] = None
 
+    logger.debug("Resolved settings: %s", resolved_settings)
     return resolved_settings
 
 
@@ -56,13 +60,20 @@ def _get_urls_to_process(tiktok_url: Optional[str], from_file: Optional[str]) ->
     """
     urls_to_process: List[str] = []
     if from_file:
+        logger.info("Reading URLs from file: %s", from_file)
         with open(from_file, 'r') as f:
-            urls_to_process.extend(line.strip() for line in f if line.strip())
+            urls_from_file = [line.strip() for line in f if line.strip()]
+            urls_to_process.extend(urls_from_file)
+        logger.debug("Found %d URLs in %s", len(urls_from_file), from_file)
     if tiktok_url:
+        logger.info("Adding URL from argument: %s", tiktok_url)
         urls_to_process.append(tiktok_url)
 
     if not urls_to_process:
+        logger.error("No URLs provided via --from-file or argument.")
         raise ValueError("You must provide either a tiktok_url or from_file.")
+
+    logger.info("Total URLs to process: %d", len(urls_to_process))
     return urls_to_process
 
 
@@ -102,35 +113,51 @@ def download_videos(
         ValueError: If no URLs are provided.
     """
     # 1. Setup
+    logger.info("Initializing services...")
     config_repo = ConfigRepository()
     config_service = ConfigService(repository=config_repo)
     repo = TikTokRepository()
     filter_service = FilterService()
+    logger.debug("Services initialized.")
 
     # 2. Configuration & URL processing
+    logger.info("Loading configuration from %s.", config_path)
     config = config_service.load_config(Path(config_path))
+    logger.debug("Loaded config: %s", config)
+
     settings = _resolve_settings(
         config, output_path, min_likes, min_views, download_transcripts, transcript_language
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
     # 3. Core Logic: Fetch and Filter
+    logger.info("Fetching metadata for %d URL(s)...", len(urls))
     all_videos: List[Video] = []
     for url in urls:
+        logger.debug("Fetching from URL: %s", url)
         all_videos.extend(repo.fetch_metadata(url))
+    logger.info("Fetched metadata for a total of %d video(s).", len(all_videos))
 
+    logger.info("Applying filters...")
     filtered_videos = filter_service.apply_filters(
         videos=all_videos,
         min_likes=settings['min_likes'],
         min_views=settings['min_views']
     )
+    logger.info("Found %d video(s) matching the criteria.", len(filtered_videos))
 
     # 4. Output / Action
-    if not metadata_only and filtered_videos:
+    if metadata_only:
+        logger.info("Metadata only mode enabled. Skipping download.")
+    elif filtered_videos:
+        logger.info("Downloading %d video(s)...", len(filtered_videos))
         repo.download_videos(
             videos=filtered_videos,
             output_path=settings['output_path'],
             transcript_language=settings['transcript_language'],
         )
+        logger.info("Download complete.")
+    else:
+        logger.info("No videos to download.")
 
     return filtered_videos

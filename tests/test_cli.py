@@ -1,4 +1,6 @@
+import logging
 from unittest.mock import patch
+
 from click.testing import CliRunner
 
 from tiktok_downloader.cli import main
@@ -154,6 +156,20 @@ def test_cli_handles_value_error(mock_download_videos):
     assert "Error: Test error" in result.output
 
 
+@patch('tiktok_downloader.cli.download_videos', side_effect=Exception("Generic error"))
+def test_cli_handles_generic_exception(mock_download_videos):
+    """
+    GIVEN the core logic raises a generic Exception
+    WHEN the CLI is invoked
+    THEN it should print a generic error message and exit.
+    """
+    runner = CliRunner()
+    result = runner.invoke(main, ["some_url"])
+
+    assert result.exit_code != 0
+    assert "An unexpected error occurred: Generic error" in result.output
+
+
 def test_cli_no_input_fails():
     """
     GIVEN no URL or --from-file option
@@ -209,3 +225,37 @@ def test_cli_download_no_videos(mock_download_videos):
     # ASSERT
     assert result.exit_code == 0
     assert "No videos to download." in result.output
+
+
+@patch('tiktok_downloader.cli.setup_logging')
+@patch('tiktok_downloader.cli.download_videos')
+def test_logging_verbose_flags(mock_download_videos, mock_setup_logging):
+    """
+    GIVEN the -v or -vv flags
+    WHEN the CLI is invoked
+    THEN it should call setup_logging with the correct logging level.
+    """
+    # ARRANGE
+    mock_download_videos.return_value = []
+    runner = CliRunner()
+    url = "http://tiktok.com/@testuser"
+
+    # ACT & ASSERT for no verbose flag (default)
+    runner.invoke(main, [url])
+    mock_setup_logging.assert_called_with(logging.WARNING)
+
+    # ACT & ASSERT for -v
+    runner.invoke(main, [url, '-v'])
+    mock_setup_logging.assert_called_with(logging.INFO)
+
+    # ACT & ASSERT for --verbose
+    runner.invoke(main, [url, '--verbose'])
+    mock_setup_logging.assert_called_with(logging.INFO)
+
+    # ACT & ASSERT for -vv
+    runner.invoke(main, [url, '-vv'])
+    mock_setup_logging.assert_called_with(logging.DEBUG)
+
+    # ACT & ASSERT for -vvv (should still be DEBUG)
+    runner.invoke(main, [url, '-vvv'])
+    mock_setup_logging.assert_called_with(logging.DEBUG)
