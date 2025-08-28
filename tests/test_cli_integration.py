@@ -3,6 +3,7 @@ from click.testing import CliRunner
 from unittest.mock import patch, MagicMock
 
 from tiktok_downloader.cli import main
+from tiktok_downloader.domains.config.schemas import Config
 
 VIDEO_URL = "https://www.tiktok.com/@anyuser/video/12345"
 VIDEO_ID = "12345"
@@ -37,7 +38,7 @@ def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
     mock_ydl_instance = MagicMock()
     mock_ydl_instance.extract_info.return_value = MOCK_METADATA
     MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
-    MockConfigService.return_value.load_config.return_value = {} # No config defaults
+    MockConfigService.return_value.load_config.return_value = Config()
 
     runner = CliRunner()
 
@@ -70,7 +71,7 @@ def test_cli_integration_download(MockYoutubeDL, MockConfigService):
     mock_ydl_instance.extract_info.return_value = MOCK_METADATA
     mock_ydl_instance.download.return_value = 0
     MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
-    MockConfigService.return_value.load_config.return_value = {} # No config defaults
+    MockConfigService.return_value.load_config.return_value = Config()
 
     runner = CliRunner()
 
@@ -108,7 +109,7 @@ def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     mock_ydl_instance = MagicMock()
     mock_ydl_instance.extract_info.return_value = MOCK_PARTIAL_METADATA
     MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
-    MockConfigService.return_value.load_config.return_value = {} # No config defaults
+    MockConfigService.return_value.load_config.return_value = Config()
 
     runner = CliRunner()
 

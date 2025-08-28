@@ -1,94 +1,31 @@
 from pathlib import Path
+from unittest.mock import MagicMock
+
 from tiktok_downloader.domains.config.services import ConfigService
+from tiktok_downloader.domains.config.repository import ConfigRepository
+from tiktok_downloader.domains.config.schemas import Config
 
-def test_load_config_success(tmp_path: Path):
+
+def test_load_config():
     """
-    GIVEN a valid config.ini file
+    GIVEN a path
     WHEN the load_config method is called
-    THEN it should return a dictionary with the correct settings, parsing types correctly.
+    THEN it should call the repository's load_from_path method and return the result.
     """
     # ARRANGE
-    config_content = """
-[defaults]
-output_path = /test/downloads
-min_likes = 100
-min_views = 5000
-transcripts = false
-"""
-    config_file = tmp_path / "config.ini"
-    config_file.write_text(config_content)
+    mock_repo = MagicMock(spec=ConfigRepository)
+    expected_config = Config(min_likes=100)
+    mock_repo.load_from_path.return_value = expected_config
+
+    config_service = ConfigService(repository=mock_repo)
+    test_path = Path("fake/path/config.ini")
 
     # ACT
-    config_service = ConfigService()
-    settings = config_service.load_config(config_file)
+    result_config = config_service.load_config(test_path)
 
     # ASSERT
-    assert settings["output_path"] == "/test/downloads"
-    assert settings["min_likes"] == 100
-    assert settings["min_views"] == 5000
-    assert settings["transcripts"] is False
-
-
-def test_load_config_missing_file(tmp_path: Path):
-    """
-    GIVEN a path to a config file that does not exist
-    WHEN the load_config method is called
-    THEN it should return an empty dictionary without raising an error.
-    """
-    # ARRANGE
-    config_file = tmp_path / "non_existent_config.ini"
-
-    # ACT
-    config_service = ConfigService()
-    settings = config_service.load_config(config_file)
-
-    # ASSERT
-    assert settings == {}
-
-
-def test_load_config_missing_defaults_section(tmp_path: Path):
-    """
-    GIVEN a config file that is missing the [defaults] section
-    WHEN the load_config method is called
-    THEN it should return an empty dictionary.
-    """
-    # ARRANGE
-    config_content = """
-[another_section]
-key = value
-"""
-    config_file = tmp_path / "config.ini"
-    config_file.write_text(config_content)
-
-    # ACT
-    config_service = ConfigService()
-    settings = config_service.load_config(config_file)
-
-    # ASSERT
-    assert settings == {}
-
-
-def test_load_config_missing_key(tmp_path: Path):
-    """
-    GIVEN a config file with a [defaults] section but a missing key
-    WHEN the load_config method is called
-    THEN it should return a dictionary with only the keys that were present.
-    """
-    # ARRANGE
-    config_content = """
-[defaults]
-output_path = /some/path
-"""
-    config_file = tmp_path / "config.ini"
-    config_file.write_text(config_content)
-
-    # ACT
-    config_service = ConfigService()
-    settings = config_service.load_config(config_file)
-
-    # ASSERT
-    assert "output_path" in settings
-    assert settings["output_path"] == "/some/path"
-    assert "min_likes" not in settings
-    assert "min_views" not in settings
-    assert "transcripts" not in settings
+    # Verify that the service delegated the call to the repository
+    mock_repo.load_from_path.assert_called_once_with(test_path)
+    # Verify that the service returned the value from the repository
+    assert result_config == expected_config
+    assert result_config.min_likes == 100

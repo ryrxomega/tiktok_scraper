@@ -1,19 +1,25 @@
+"""
+Provides services for the TikTok domain, encapsulating business logic.
+"""
 from typing import List, Optional
 
-from .schemas import VideoMetadata
+from .models import Video
+
 
 class FilterService:
     """
     A service for applying filtering logic to a list of videos.
-    This keeps the business logic of filtering separate from other concerns.
+
+    This keeps the business logic of filtering separate from other concerns,
+    operating on core domain models.
     """
 
     def apply_filters(
         self,
-        videos: List[VideoMetadata],
+        videos: List[Video],
         min_likes: Optional[int],
         min_views: Optional[int],
-    ) -> List[VideoMetadata]:
+    ) -> List[Video]:
         """
         Filters a list of videos based on specified criteria.
 
@@ -23,12 +29,12 @@ class FilterService:
         by any filter that acts on that metadata.
 
         Args:
-            videos: The list of VideoMetadata objects to filter.
+            videos: The list of Video objects to filter.
             min_likes: If provided, videos must have at least this many likes.
             min_views: If provided, videos must have at least this many views.
 
         Returns:
-            A new list of VideoMetadata objects that meet all the criteria.
+            A new list of Video objects that meet all the criteria.
         """
         # Start with the full list of videos. We will progressively narrow it down.
         filtered_videos = videos

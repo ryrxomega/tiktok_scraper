@@ -1,41 +1,37 @@
-import configparser
+"""
+Service layer for the configuration domain.
+"""
 from pathlib import Path
-from typing import Any, Dict
+
+from .repository import ConfigRepository
+from .schemas import Config
+
 
 class ConfigService:
     """
-    Service for loading and parsing the config.ini file.
+    Orchestrates the loading of application configuration.
+
+    This service acts as a go-between for the application's entry points
+    (like the CLI) and the data access layer (the repository).
     """
 
-    def load_config(self, path: Path) -> Dict[str, Any]:
+    def __init__(self, repository: ConfigRepository):
         """
-        Loads configuration from the given .ini file path.
+        Initializes the service with a repository instance.
+
+        Args:
+            repository: An instance of ConfigRepository to handle data access.
+        """
+        self._repository = repository
+
+    def load_config(self, path: Path) -> Config:
+        """
+        Loads configuration from a given path using the repository.
 
         Args:
             path: The path to the configuration file.
 
         Returns:
-            A dictionary containing the settings.
+            A Config object containing the application settings.
         """
-        parser = configparser.ConfigParser()
-        # According to configparser docs, reading a non-existent file
-        # results in an empty dataset, which is safe.
-        parser.read(path)
-
-        settings: Dict[str, Any] = {}
-        if "defaults" not in parser:
-            return settings
-
-        defaults = parser["defaults"]
-
-        # We need to handle type conversion explicitly
-        if "output_path" in defaults:
-            settings["output_path"] = defaults["output_path"]
-        if "min_likes" in defaults:
-            settings["min_likes"] = defaults.getint("min_likes")
-        if "min_views" in defaults:
-            settings["min_views"] = defaults.getint("min_views")
-        if "transcripts" in defaults:
-            settings["transcripts"] = defaults.getboolean("transcripts")
-
-        return settings
+        return self._repository.load_from_path(path)

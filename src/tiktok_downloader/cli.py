@@ -1,37 +1,77 @@
+"""
+Defines the command-line interface for the TikTok Downloader.
+
+This module uses the `click` library to create a user-friendly CLI
+and orchestrates the application's services to perform its functions.
+"""
 from typing import List, Optional, Dict, Any
 import click
 from pathlib import Path
 
+from .domains.config.repository import ConfigRepository
+from .domains.config.schemas import Config
 from .domains.config.services import ConfigService
+from .domains.tiktok.models import Video
 from .domains.tiktok.repository import TikTokRepository
 from .domains.tiktok.services import FilterService
-from .domains.tiktok.schemas import VideoMetadata
 
 # --- Helper Functions for CLI Logic ---
 
 def _resolve_settings(
-    config: Dict[str, Any],
+    config: Config,
     output_path: Optional[str],
     min_likes: Optional[int],
     min_views: Optional[int],
     download_transcripts: Optional[bool],
 ) -> Dict[str, Any]:
-    """Merges settings from config file and CLI options."""
+    """
+    Merges settings from the config file and CLI options.
+
+    CLI options always take precedence over settings from the config file.
+
+    Args:
+        config: The configuration loaded from the config.ini file.
+        output_path: The output path specified via CLI option.
+        min_likes: The minimum likes specified via CLI option.
+        min_views: The minimum views specified via CLI option.
+        download_transcripts: The transcript download setting from CLI option.
+
+    Returns:
+        A dictionary of the final, resolved settings.
+    """
+    # CLI options take precedence over config file settings.
     resolved_settings = {
-        'output_path': output_path or config.get('output_path', '.'),
-        'min_likes': min_likes if min_likes is not None else config.get('min_likes'),
-        'min_views': min_views if min_views is not None else config.get('min_views'),
+        'output_path': output_path or config.output_path or '.',
+        'min_likes': min_likes if min_likes is not None else config.min_likes,
+        'min_views': min_views if min_views is not None else config.min_views,
     }
 
     if download_transcripts is not None:
         resolved_settings['transcripts'] = download_transcripts
     else:
-        resolved_settings['transcripts'] = config.get('transcripts', False)
+        # Fallback to config, then to a default of False.
+        resolved_settings['transcripts'] = config.transcripts or False
 
     return resolved_settings
 
+
 def _get_urls_to_process(tiktok_url: Optional[str], from_file: Optional[str]) -> List[str]:
-    """Gets a list of URLs from the CLI arguments."""
+    """
+    Gets a list of URLs to process from the CLI arguments.
+
+    It gathers URLs from both the direct TIKTOK_URL argument and the
+    --from-file option.
+
+    Args:
+        tiktok_url: A single TikTok URL provided as an argument.
+        from_file: A path to a file containing one URL per line.
+
+    Returns:
+        A list of all unique URLs to be processed.
+
+    Raises:
+        click.Abort: If no URLs are provided via either method.
+    """
     urls_to_process: List[str] = []
     if from_file:
         with open(from_file, 'r') as f:
@@ -44,8 +84,14 @@ def _get_urls_to_process(tiktok_url: Optional[str], from_file: Optional[str]) ->
         raise click.Abort()
     return urls_to_process
 
-def _display_metadata(videos: List[VideoMetadata]):
-    """Prints formatted metadata for a list of videos."""
+
+def _display_metadata(videos: List[Video]):
+    """
+    Prints formatted metadata for a list of videos to the console.
+
+    Args:
+        videos: A list of Video objects whose metadata should be displayed.
+    """
     if not videos:
         click.echo("No videos to display.")
         return
@@ -82,7 +128,8 @@ def main(
     You must provide either a TIKTOK_URL or the --from-file option.
     """
     # 1. Setup
-    config_service = ConfigService()
+    config_repo = ConfigRepository()
+    config_service = ConfigService(repository=config_repo)
     repo = TikTokRepository()
     filter_service = FilterService()
 
@@ -92,7 +139,7 @@ def main(
     urls = _get_urls_to_process(tiktok_url, from_file)
 
     # 3. Core Logic: Fetch and Filter
-    all_videos: List[VideoMetadata] = []
+    all_videos: List[Video] = []
     for url in urls:
         click.echo(f"Fetching metadata from {url}...")
         all_videos.extend(repo.fetch_metadata(url))
