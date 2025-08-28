@@ -20,3 +20,4 @@ class Config(BaseModel):
     min_likes: Optional[int] = None
     min_views: Optional[int] = None
     transcripts: Optional[bool] = None
+    transcript_language: Optional[str] = None

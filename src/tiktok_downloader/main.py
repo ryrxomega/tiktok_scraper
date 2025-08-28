@@ -22,6 +22,7 @@ def _resolve_settings(
     min_likes: Optional[int],
     min_views: Optional[int],
     download_transcripts: Optional[bool],
+    transcript_language: str,
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -34,10 +35,17 @@ def _resolve_settings(
         'min_views': min_views if min_views is not None else config.min_views,
     }
 
+    # Determine if transcripts should be downloaded
     if download_transcripts is not None:
-        resolved_settings['transcripts'] = download_transcripts
+        transcripts_enabled = download_transcripts
     else:
-        resolved_settings['transcripts'] = config.transcripts or False
+        transcripts_enabled = config.transcripts or False
+
+    # Set transcript language if enabled
+    if transcripts_enabled:
+        resolved_settings['transcript_language'] = transcript_language or config.transcript_language
+    else:
+        resolved_settings['transcript_language'] = None
 
     return resolved_settings
 
@@ -65,6 +73,7 @@ def download_videos(
     min_likes: Optional[int] = None,
     min_views: Optional[int] = None,
     download_transcripts: Optional[bool] = None,
+    transcript_language: str = 'en-US',
     metadata_only: bool = False,
     config_path: str = "config.ini",
 ) -> List[Video]:
@@ -81,8 +90,10 @@ def download_videos(
         min_likes: Filter for videos with at least this many likes.
         min_views: Filter for videos with at least this many views.
         download_transcripts: Whether to download transcripts.
+        transcript_language: The language for the transcript.
         metadata_only: If True, only fetch and return metadata without downloading.
-        config_path: Path to the configuration file.
+        config_path: Path to the
+        configuration file.
 
     Returns:
         A list of `Video` objects that match the criteria.
@@ -98,7 +109,9 @@ def download_videos(
 
     # 2. Configuration & URL processing
     config = config_service.load_config(Path(config_path))
-    settings = _resolve_settings(config, output_path, min_likes, min_views, download_transcripts)
+    settings = _resolve_settings(
+        config, output_path, min_likes, min_views, download_transcripts, transcript_language
+    )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
     # 3. Core Logic: Fetch and Filter
@@ -117,7 +130,7 @@ def download_videos(
         repo.download_videos(
             videos=filtered_videos,
             output_path=settings['output_path'],
-            download_transcripts=settings['transcripts'],
+            transcript_language=settings['transcript_language'],
         )
 
     return filtered_videos

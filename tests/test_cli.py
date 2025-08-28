@@ -34,6 +34,7 @@ def test_cli_metadata_only_success(mock_download_videos):
         min_likes=None,
         min_views=None,
         download_transcripts=None,
+        transcript_language='en-US',
         metadata_only=True,
     )
     assert "Found 2 videos that match the criteria." in result.output
@@ -65,6 +66,7 @@ def test_cli_filtering_options(mock_download_videos):
         min_likes=100,
         min_views=1000,
         download_transcripts=None,
+        transcript_language='en-US',
         metadata_only=False,
     )
 
@@ -95,16 +97,17 @@ def test_cli_from_file(mock_download_videos):
             min_likes=None,
             min_views=None,
             download_transcripts=None,
+            transcript_language='en-US',
             metadata_only=True,
         )
 
 
 @patch('tiktok_downloader.cli.download_videos')
-def test_cli_download_workflow(mock_download_videos):
+def test_cli_download_workflow_with_language(mock_download_videos):
     """
-    GIVEN a URL and no --metadata-only flag
+    GIVEN a URL and transcript options
     WHEN the CLI is invoked
-    THEN it should call download_videos and report download.
+    THEN it should call download_videos with the correct transcript settings.
     """
     # ARRANGE
     sample_videos = [
@@ -115,7 +118,12 @@ def test_cli_download_workflow(mock_download_videos):
     url = "http://tiktok.com/@testuser"
 
     # ACT
-    result = runner.invoke(main, [url, '--output-path', '/my/downloads', '--transcripts'])
+    result = runner.invoke(main, [
+        url,
+        '--output-path', '/my/downloads',
+        '--transcripts',
+        '--transcript-language', 'es'
+    ])
 
     # ASSERT
     assert result.exit_code == 0
@@ -127,6 +135,7 @@ def test_cli_download_workflow(mock_download_videos):
         min_likes=None,
         min_views=None,
         download_transcripts=True,
+        transcript_language='es',
         metadata_only=False,
     )
 

@@ -88,6 +88,46 @@ def test_cli_integration_download(MockYoutubeDL, MockConfigService):
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
+def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigService):
+    """
+    GIVEN a mocked yt-dlp response
+    WHEN the CLI is invoked for download with transcript options
+    THEN it should call yt-dlp with the correct options.
+    """
+    # ARRANGE
+    mock_ydl_instance = MagicMock()
+    mock_ydl_instance.extract_info.return_value = MOCK_METADATA
+    mock_ydl_instance.download.return_value = 0
+    MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
+    MockConfigService.return_value.load_config.return_value = Config()
+
+    runner = CliRunner()
+
+    # ACT
+    result = runner.invoke(main, [
+        VIDEO_URL,
+        '--output-path', '/tmp/downloads',
+        '--transcripts',
+        '--transcript-language', 'es'
+    ])
+
+    # ASSERT
+    assert result.exit_code == 0, result.output
+    assert "Downloading 1 video(s)..." in result.output
+
+    expected_opts = {
+        'outtmpl': '/tmp/downloads/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'writesubtitles': True,
+        'writeautomaticsub': True,
+        'subtitleslangs': ['es'],
+    }
+    MockYoutubeDL.assert_called_with(expected_opts)
+
+
+@pytest.mark.integration
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
 def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     """
     GIVEN a video with missing (but not essential) metadata
