@@ -26,7 +26,7 @@ MOCK_METADATA = {
 }
 
 @pytest.mark.integration
-@patch('tiktok_downloader.cli.ConfigService')
+@patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
 def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
     """
@@ -47,7 +47,7 @@ def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
 
     # ASSERT
     assert result.exit_code == 0, result.output
-    assert "Fetching metadata from" in result.output
+    assert "Fetching metadata..." in result.output
     assert "Found 1 videos that match the criteria." in result.output
     assert f"ID:          {VIDEO_ID}" in result.output
     assert "Title:       A test video title" in result.output
@@ -58,7 +58,7 @@ def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
 
 
 @pytest.mark.integration
-@patch('tiktok_downloader.cli.ConfigService')
+@patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
 def test_cli_integration_download(MockYoutubeDL, MockConfigService):
     """
@@ -80,13 +80,13 @@ def test_cli_integration_download(MockYoutubeDL, MockConfigService):
 
     # ASSERT
     assert result.exit_code == 0, result.output
-    assert "Downloading 1 video(s) to /tmp/downloads..." in result.output
+    assert "Downloading 1 video(s)..." in result.output
     assert "Download complete." in result.output
     mock_ydl_instance.download.assert_called_once_with([VIDEO_URL])
 
 
 @pytest.mark.integration
-@patch('tiktok_downloader.cli.ConfigService')
+@patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
 def test_cli_handles_partial_metadata(MockYoutubeDL, MockConfigService):
     """

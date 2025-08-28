@@ -1,0 +1,123 @@
+"""
+The core application logic for the TikTok Downloader.
+
+This module is responsible for orchestrating the fetching, filtering, and
+downloading of TikTok videos. It is designed to be used both by the CLI
+and as a library in other Python applications.
+"""
+from typing import List, Optional, Dict, Any
+from pathlib import Path
+
+from .domains.config.repository import ConfigRepository
+from .domains.config.schemas import Config
+from .domains.config.services import ConfigService
+from .domains.tiktok.models import Video
+from .domains.tiktok.repository import TikTokRepository
+from .domains.tiktok.services import FilterService
+
+
+def _resolve_settings(
+    config: Config,
+    output_path: Optional[str],
+    min_likes: Optional[int],
+    min_views: Optional[int],
+    download_transcripts: Optional[bool],
+) -> Dict[str, Any]:
+    """
+    Merges settings from the config file and CLI options.
+
+    CLI options always take precedence over settings from the config file.
+    """
+    resolved_settings = {
+        'output_path': output_path or config.output_path or '.',
+        'min_likes': min_likes if min_likes is not None else config.min_likes,
+        'min_views': min_views if min_views is not None else config.min_views,
+    }
+
+    if download_transcripts is not None:
+        resolved_settings['transcripts'] = download_transcripts
+    else:
+        resolved_settings['transcripts'] = config.transcripts or False
+
+    return resolved_settings
+
+
+def _get_urls_to_process(tiktok_url: Optional[str], from_file: Optional[str]) -> List[str]:
+    """
+    Gets a list of URLs to process from the arguments.
+    """
+    urls_to_process: List[str] = []
+    if from_file:
+        with open(from_file, 'r') as f:
+            urls_to_process.extend(line.strip() for line in f if line.strip())
+    if tiktok_url:
+        urls_to_process.append(tiktok_url)
+
+    if not urls_to_process:
+        raise ValueError("You must provide either a tiktok_url or from_file.")
+    return urls_to_process
+
+
+def download_videos(
+    tiktok_url: Optional[str] = None,
+    from_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+    min_likes: Optional[int] = None,
+    min_views: Optional[int] = None,
+    download_transcripts: Optional[bool] = None,
+    metadata_only: bool = False,
+    config_path: str = "config.ini",
+) -> List[Video]:
+    """
+    The main entry point for the TikTok Downloader application.
+
+    This function orchestrates the process of fetching, filtering, and
+    downloading TikTok videos based on the provided parameters.
+
+    Args:
+        tiktok_url: A single TikTok URL.
+        from_file: Path to a file containing one TikTok URL per line.
+        output_path: The directory to save the downloaded videos.
+        min_likes: Filter for videos with at least this many likes.
+        min_views: Filter for videos with at least this many views.
+        download_transcripts: Whether to download transcripts.
+        metadata_only: If True, only fetch and return metadata without downloading.
+        config_path: Path to the configuration file.
+
+    Returns:
+        A list of `Video` objects that match the criteria.
+
+    Raises:
+        ValueError: If no URLs are provided.
+    """
+    # 1. Setup
+    config_repo = ConfigRepository()
+    config_service = ConfigService(repository=config_repo)
+    repo = TikTokRepository()
+    filter_service = FilterService()
+
+    # 2. Configuration & URL processing
+    config = config_service.load_config(Path(config_path))
+    settings = _resolve_settings(config, output_path, min_likes, min_views, download_transcripts)
+    urls = _get_urls_to_process(tiktok_url, from_file)
+
+    # 3. Core Logic: Fetch and Filter
+    all_videos: List[Video] = []
+    for url in urls:
+        all_videos.extend(repo.fetch_metadata(url))
+
+    filtered_videos = filter_service.apply_filters(
+        videos=all_videos,
+        min_likes=settings['min_likes'],
+        min_views=settings['min_views']
+    )
+
+    # 4. Output / Action
+    if not metadata_only and filtered_videos:
+        repo.download_videos(
+            videos=filtered_videos,
+            output_path=settings['output_path'],
+            download_transcripts=settings['transcripts'],
+        )
+
+    return filtered_videos

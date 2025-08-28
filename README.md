@@ -101,6 +101,36 @@ Usage: tiktok-downloader [OPTIONS] [TIKTOK_URL]
 - `--transcripts / --no-transcripts`: Enable or disable transcript downloads.
 - `--metadata-only`: Fetch and display metadata without downloading videos.
 
+### 3.3 Library Usage
+
+In addition to the CLI, you can use `tiktok-downloader` as a library in your own Python projects. The core functionality is exposed through the `download_videos` function.
+
+**Example:**
+```python
+from tiktok_downloader import download_videos
+
+# Download videos from a specific user, with filters
+filtered_videos = download_videos(
+    tiktok_url="https://www.tiktok.com/@nasa",
+    output_path="nasa_videos",
+    min_likes=100000,
+    min_views=1000000,
+    download_transcripts=True,
+)
+
+print(f"Downloaded {len(filtered_videos)} videos.")
+
+# Alternatively, just fetch metadata without downloading
+metadata = download_videos(
+    tiktok_url="https://www.tiktok.com/@nasa",
+    metadata_only=True,
+)
+
+for video in metadata:
+    print(f"Title: {video.title}, Likes: {video.like_count}")
+
+```
+
 ## 4) Configuration
 
 The script can be configured via a `config.ini` file in the project's root directory.
