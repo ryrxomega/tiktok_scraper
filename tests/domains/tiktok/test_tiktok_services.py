@@ -1,7 +1,22 @@
 import pytest
+from hypothesis import given, strategies as st
 
 from tiktok_downloader.domains.tiktok.services import FilterService
 from tiktok_downloader.domains.tiktok.schemas import VideoMetadata
+
+# Strategy for generating VideoMetadata objects
+video_metadata_strategy = st.builds(
+    VideoMetadata,
+    id=st.text(),
+    title=st.text(),
+    like_count=st.integers(min_value=0, max_value=1_000_000),
+    view_count=st.integers(min_value=0, max_value=10_000_000),
+    webpage_url=st.text(),
+)
+
+# Strategy for a list of videos
+videos_strategy = st.lists(video_metadata_strategy, min_size=1)
+
 
 @pytest.fixture
 def sample_videos():
@@ -13,7 +28,8 @@ def sample_videos():
         VideoMetadata(id='4', title='Video 4', like_count=400, view_count=4000, webpage_url='...'),
     ]
 
-def test_apply_filters_by_min_likes(sample_videos):
+@given(videos=videos_strategy, min_likes=st.integers(min_value=0))
+def test_apply_filters_by_min_likes_hypothesis(videos, min_likes):
     """
     GIVEN a list of videos and a min_likes filter
     WHEN apply_filters is called
@@ -23,12 +39,18 @@ def test_apply_filters_by_min_likes(sample_videos):
     service = FilterService()
 
     # ACT
-    filtered_videos = service.apply_filters(videos=sample_videos, min_likes=250, min_views=None)
+    filtered_videos = service.apply_filters(videos=videos, min_likes=min_likes, min_views=None)
 
     # ASSERT
-    assert len(filtered_videos) == 2
-    assert filtered_videos[0].id == '3'
-    assert filtered_videos[1].id == '4'
+    for video in filtered_videos:
+        assert video.like_count >= min_likes
+
+    for video in videos:
+        if video.like_count >= min_likes:
+            assert video in filtered_videos
+        else:
+            assert video not in filtered_videos
+
 
 def test_apply_filters_by_min_views(sample_videos):
     """
