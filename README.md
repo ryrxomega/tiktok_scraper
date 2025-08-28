@@ -136,3 +136,35 @@ transcripts = true
     ```bash
     tiktok-downloader --version
     ```
+
+## 6) Testing
+
+This project uses `pytest` for testing. To run the tests, first install the development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+
+Then run `pytest`:
+```bash
+pytest
+```
+
+### Property-Based Testing with Hypothesis
+
+This project uses `hypothesis` for property-based testing. This allows for more robust testing by generating a wide range of test cases automatically.
+
+### Fuzz Testing with HypoFuzz
+
+This project is set up to use `hypofuzz` for fuzz testing. HypoFuzz is a powerful tool that can find bugs by running tests with a wide range of inputs.
+
+To run the fuzzer, use the following command:
+```bash
+hypothesis fuzz
+```
+
+This will start the fuzzer, which will run indefinitely. You can stop it with `Ctrl+C`.
+
+**Note:** The HypoFuzz dashboard might not work correctly in all environments. If you encounter issues with the dashboard, you can run the fuzzer without it using the `--no-dashboard` flag:
+```bash
+hypothesis fuzz --no-dashboard
+```

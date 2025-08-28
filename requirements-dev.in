@@ -1,0 +1,8 @@
+pytest
+pytest-cov
+ruff
+mypy
+radon
+pip-tools
+hypothesis
+hypofuzz
