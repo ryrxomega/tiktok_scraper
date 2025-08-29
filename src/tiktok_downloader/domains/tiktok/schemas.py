@@ -25,3 +25,4 @@ class VideoMetadata(BaseModel):
     title: Optional[str] = None
     like_count: Optional[int] = None
     view_count: Optional[int] = None
+    upload_date: Optional[str] = None

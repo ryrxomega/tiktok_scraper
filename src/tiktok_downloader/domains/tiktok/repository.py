@@ -2,6 +2,7 @@
 Repository for the TikTok domain, handling data access and external interactions.
 """
 import yt_dlp
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from .models import Video
@@ -19,12 +20,16 @@ class TikTokRepository:
 
     def _to_domain(self, schema: VideoMetadata) -> Video:
         """Converts a Pydantic schema to a domain model."""
+        upload_date = None
+        if schema.upload_date:
+            upload_date = datetime.strptime(schema.upload_date, '%Y%m%d').date()
         return Video(
             id=schema.id,
             title=schema.title,
             like_count=schema.like_count,
             view_count=schema.view_count,
             webpage_url=schema.webpage_url,
+            upload_date=upload_date,
         )
 
     def _get_ydl_opts(
@@ -91,6 +96,7 @@ class TikTokRepository:
                         like_count=video_info.get('like_count'),
                         view_count=video_info.get('view_count'),
                         webpage_url=video_info.get('webpage_url'),
+                        upload_date=video_info.get('upload_date'),
                     )
                     # Then, convert to the internal domain model
                     videos.append(self._to_domain(schema))
