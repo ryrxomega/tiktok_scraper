@@ -1,6 +1,7 @@
 """
 Defines the Pydantic models for the configuration domain.
 """
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
@@ -28,3 +29,4 @@ class Config(BaseModel):
     cookies_from_browser: Optional[str] = None
     cookies_file: Optional[str] = None
     save_metadata_path: Optional[Path] = None
+    process_after_date: Optional[date] = None

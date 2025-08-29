@@ -6,6 +6,7 @@ downloading of TikTok videos. It is designed to be used both by the CLI
 and as a library in other Python applications.
 """
 import logging
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -25,6 +26,7 @@ def _resolve_settings(
     output_path: Optional[str],
     min_likes: Optional[int],
     min_views: Optional[int],
+    process_after_date: Optional[date],
     download_transcripts: Optional[bool],
     transcript_language: str,
     concurrent_downloads: int,
@@ -43,6 +45,7 @@ def _resolve_settings(
         'output_path': output_path or config.output_path or '.',
         'min_likes': min_likes if min_likes is not None else config.min_likes,
         'min_views': min_views if min_views is not None else config.min_views,
+        'process_after_date': process_after_date if process_after_date is not None else config.process_after_date,
         'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
         'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
         'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
@@ -96,6 +99,7 @@ def download_videos(
     output_path: Optional[str] = None,
     min_likes: Optional[int] = None,
     min_views: Optional[int] = None,
+    process_after_date: Optional[date] = None,
     download_transcripts: Optional[bool] = None,
     transcript_language: str = 'en-US',
     metadata_only: bool = False,
@@ -151,6 +155,7 @@ def download_videos(
         output_path,
         min_likes,
         min_views,
+        process_after_date,
         download_transcripts,
         transcript_language,
         concurrent_downloads,
@@ -183,7 +188,8 @@ def download_videos(
     filtered_videos = filter_service.apply_filters(
         videos=all_videos,
         min_likes=settings['min_likes'],
-        min_views=settings['min_views']
+        min_views=settings['min_views'],
+        process_after_date=settings['process_after_date']
     )
     logger.info("Found %d video(s) matching the criteria.", len(filtered_videos))
 

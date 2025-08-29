@@ -1,5 +1,6 @@
 import pytest
 from hypothesis import given, strategies as st
+from datetime import date
 
 from tiktok_downloader.domains.tiktok.services import FilterService
 from tiktok_downloader.domains.tiktok.models import Video
@@ -22,10 +23,10 @@ videos_strategy = st.lists(video_strategy, min_size=1)
 def sample_videos():
     """Provides a sample list of Video objects for testing."""
     return [
-        Video(id='1', title='Video 1', like_count=100, view_count=1000, webpage_url='...'),
-        Video(id='2', title='Video 2', like_count=200, view_count=2000, webpage_url='...'),
-        Video(id='3', title='Video 3', like_count=300, view_count=3000, webpage_url='...'),
-        Video(id='4', title='Video 4', like_count=400, view_count=4000, webpage_url='...'),
+        Video(id='1', title='Video 1', like_count=100, view_count=1000, webpage_url='...', upload_date=date(2023, 1, 1)),
+        Video(id='2', title='Video 2', like_count=200, view_count=2000, webpage_url='...', upload_date=date(2023, 1, 2)),
+        Video(id='3', title='Video 3', like_count=300, view_count=3000, webpage_url='...', upload_date=date(2023, 1, 3)),
+        Video(id='4', title='Video 4', like_count=400, view_count=4000, webpage_url='...', upload_date=date(2023, 1, 4)),
     ]
 
 @given(videos=videos_strategy, min_likes=st.integers(min_value=0))
@@ -116,3 +117,19 @@ def test_apply_filters_no_filters(sample_videos):
     # ASSERT
     assert len(filtered_videos) == 4
     assert filtered_videos == sample_videos
+
+def test_apply_filters_with_process_after_date(sample_videos):
+    """
+    GIVEN a list of videos and a process_after_date filter
+    WHEN apply_filters is called
+    THEN it should return only videos with upload_date >= the filter value.
+    """
+    # ARRANGE
+    service = FilterService()
+
+    # ACT
+    filtered_videos = service.apply_filters(videos=sample_videos, min_likes=None, min_views=None, process_after_date=date(2023, 1, 3))
+
+    # ASSERT
+    assert len(filtered_videos) == 2
+    assert all(v.upload_date >= date(2023, 1, 3) for v in filtered_videos)

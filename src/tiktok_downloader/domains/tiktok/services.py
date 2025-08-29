@@ -1,6 +1,7 @@
 """
 Provides services for the TikTok domain, encapsulating business logic.
 """
+from datetime import date
 from typing import List, Optional
 
 from .models import Video
@@ -19,6 +20,7 @@ class FilterService:
         videos: List[Video],
         min_likes: Optional[int],
         min_views: Optional[int],
+        process_after_date: Optional[date] = None,
     ) -> List[Video]:
         """
         Filters a list of videos based on specified criteria.
@@ -32,6 +34,7 @@ class FilterService:
             videos: The list of Video objects to filter.
             min_likes: If provided, videos must have at least this many likes.
             min_views: If provided, videos must have at least this many views.
+            process_after_date: If provided, videos must have been uploaded on or after this date.
 
         Returns:
             A new list of Video objects that meet all the criteria.
@@ -49,6 +52,12 @@ class FilterService:
             filtered_videos = [
                 video for video in filtered_videos
                 if video.view_count is not None and video.view_count >= min_views
+            ]
+
+        if process_after_date is not None:
+            filtered_videos = [
+                video for video in filtered_videos
+                if video.upload_date is not None and video.upload_date >= process_after_date
             ]
 
         return filtered_videos

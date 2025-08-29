@@ -6,6 +6,7 @@ and orchestrates the application's services to perform its functions.
 """
 import logging
 import pathlib
+from datetime import datetime
 from typing import List, Optional
 
 import click
@@ -40,6 +41,7 @@ def _display_metadata(videos: List[Video]):
 @click.option('--output-path', type=click.Path(file_okay=False, writable=True, resolve_path=True), help='Specify the download directory.')
 @click.option('--min-likes', type=int, help='Filter videos with at least this many likes.')
 @click.option('--min-views', type=int, help='Filter videos with at least this many views.')
+@click.option('--after-date', help='Only process videos uploaded on or after this date (YYYY-MM-DD).')
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
@@ -56,6 +58,7 @@ def main(
     output_path: Optional[str],
     min_likes: Optional[int],
     min_views: Optional[int],
+    after_date: Optional[str],
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
@@ -85,6 +88,7 @@ def main(
         if tiktok_url or from_file:
             click.echo("Fetching metadata...")
 
+        process_after_date = datetime.strptime(after_date, '%Y-%m-%d').date() if after_date else None
         save_metadata_path = pathlib.Path(save_metadata) if save_metadata else None
         filtered_videos = download_videos(
             tiktok_url=tiktok_url,
@@ -92,6 +96,7 @@ def main(
             output_path=output_path,
             min_likes=min_likes,
             min_views=min_views,
+            process_after_date=process_after_date,
             download_transcripts=download_transcripts,
             transcript_language=transcript_language,
             metadata_only=metadata_only,

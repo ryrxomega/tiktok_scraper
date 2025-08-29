@@ -2,6 +2,7 @@
 Defines the core domain models for the TikTok domain.
 """
 from dataclasses import dataclass
+from datetime import date
 from typing import Optional
 
 
@@ -21,9 +22,11 @@ class Video:
         title: The title of the video.
         like_count: The number of likes the video has received.
         view_count: The number of views the video has received.
+        upload_date: The date the video was uploaded.
     """
     id: str
     webpage_url: str
     title: Optional[str] = None
     like_count: Optional[int] = None
     view_count: Optional[int] = None
+    upload_date: Optional[date] = None
