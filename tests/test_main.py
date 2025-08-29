@@ -124,6 +124,7 @@ def test_download_videos_with_cookies(
         tiktok_url="http://tiktok.com/testvideo",
         cookies_from_browser=browser,
         cookies_file=cookie_file,
+        download_archive='./.tiktok-downloader-archive.txt'
     )
 
     # Assert
@@ -141,6 +142,7 @@ def test_download_videos_with_cookies(
         max_sleep_interval=None,
         cookies_from_browser=browser,
         cookies_file=cookie_file,
+        download_archive_path='./.tiktok-downloader-archive.txt',
     )
 
 

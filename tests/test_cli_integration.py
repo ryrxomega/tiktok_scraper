@@ -28,6 +28,48 @@ MOCK_METADATA = {
 @pytest.mark.integration
 @patch('tiktok_downloader.main.ConfigService')
 @patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
+def test_cli_integration_download_with_archive(MockYoutubeDL, MockConfigService, tmp_path):
+    """
+    GIVEN a mocked yt-dlp response and an archive file path
+    WHEN the CLI is invoked for download with the archive option
+    THEN it should call yt-dlp with the correct options, including the archive file.
+    """
+    # ARRANGE
+    mock_ydl_instance = MagicMock()
+    mock_ydl_instance.extract_info.return_value = MOCK_METADATA
+    mock_ydl_instance.download.return_value = 0
+    MockYoutubeDL.return_value.__enter__.return_value = mock_ydl_instance
+    MockConfigService.return_value.load_config.return_value = Config()
+
+    runner = CliRunner()
+    output_dir = tmp_path / "downloads"
+    output_dir.mkdir()
+    archive_file = tmp_path / "archive.txt"
+
+    # ACT
+    result = runner.invoke(main, [
+        VIDEO_URL,
+        '--output-path', str(output_dir),
+        '--download-archive', str(archive_file)
+    ])
+
+    # ASSERT
+    assert result.exit_code == 0, result.output
+    assert "Downloading 1 video(s)..." in result.output
+
+    expected_opts = {
+        'quiet': True,
+        'outtmpl': f'{output_dir}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'download_archive': str(archive_file),
+    }
+    MockYoutubeDL.assert_called_with(expected_opts)
+    mock_ydl_instance.download.assert_called_once_with([VIDEO_URL])
+
+
+@pytest.mark.integration
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.domains.tiktok.repository.yt_dlp.YoutubeDL')
 def test_cli_integration_metadata_only(MockYoutubeDL, MockConfigService):
     """
     GIVEN a mocked yt-dlp response
@@ -122,6 +164,7 @@ def test_cli_integration_download_with_transcripts(MockYoutubeDL, MockConfigServ
         'writesubtitles': True,
         'writeautomaticsub': True,
         'subtitleslangs': ['es'],
+        'download_archive': '/tmp/downloads/.tiktok-downloader-archive.txt',
     }
     MockYoutubeDL.assert_called_with(expected_opts)
 

@@ -43,6 +43,7 @@ def test_cli_metadata_only_success(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        download_archive=None,
     )
     assert "Found 2 videos that match the criteria." in result.output
     assert "ID:          123" in result.output
@@ -80,6 +81,7 @@ def test_cli_filtering_options(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        download_archive=None,
     )
 
 
@@ -116,6 +118,7 @@ def test_cli_from_file(mock_download_videos):
             max_sleep_interval=None,
             cookies_from_browser=None,
             cookies_file=None,
+            download_archive=None,
         )
 
 
@@ -159,6 +162,7 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        download_archive=None,
     )
 
 
@@ -322,4 +326,5 @@ def test_cli_cookie_options(mock_download_videos):
             max_sleep_interval=None,
             cookies_from_browser=browser,
             cookies_file=cookie_file,
+            download_archive=None,
         )

@@ -102,8 +102,19 @@ Usage: tiktok-downloader [OPTIONS] [TIKTOK_URL]
 - `--metadata-only`: Fetch and display metadata without downloading videos.
 - `--cookies-from-browser BROWSER`: The browser to extract cookies from (e.g., chrome, firefox).
 - `--cookies-file FILE`: Path to a file containing cookies in the Netscape format.
+- `--download-archive FILE`: Path to a file to record downloaded video IDs. Skips downloading videos in this file.
 
-### 3.3 Authentication
+### 3.3 Preventing Re-downloads
+
+To avoid downloading the same videos again, you can use the `--download-archive` option. The script will maintain a file that lists the IDs of all downloaded videos and will skip downloading them on subsequent runs.
+
+```bash
+tiktok-downloader <URL> --download-archive /path/to/my-archive.txt
+```
+
+If you don't provide a path, a file named `.tiktok-downloader-archive.txt` will be automatically created in your output directory. This option can also be set in the `config.ini` file.
+
+### 3.4 Authentication
 
 For content that requires a login (e.g., private videos, age-restricted content), you can use your browser's cookies.
 
@@ -125,7 +136,7 @@ tiktok-downloader <URL> --cookies-file /path/to/your/cookies.txt
 
 These options can also be set in the `config.ini` file.
 
-### 3.4 Library Usage
+### 3.5 Library Usage
 
 In addition to the CLI, you can use `tiktok-downloader` as a library in your own Python projects. The core functionality is exposed through the `download_videos` function.
 
@@ -140,6 +151,7 @@ filtered_videos = download_videos(
     min_likes=100000,
     min_views=1000000,
     download_transcripts=True,
+    download_archive="nasa_videos/archive.txt",
 )
 
 print(f"Downloaded {len(filtered_videos)} videos.")
@@ -171,6 +183,7 @@ transcript_language = en-US
 # Optional authentication settings
 # cookies_from_browser = chrome
 # cookies_file = /path/to/cookies.txt
+# download_archive = /path/to/archive.txt
 ```
 
 ## 5) Deployment

@@ -47,6 +47,7 @@ def _display_metadata(videos: List[Video]):
 @click.option('--max-sleep-interval', type=int, help='Maximum time to wait between downloads.')
 @click.option('--cookies-from-browser', help='The browser to extract cookies from (e.g., chrome, firefox).')
 @click.option('--cookies-file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), help='Path to a file containing cookies.')
+@click.option('--download-archive', type=click.Path(dir_okay=False, writable=True, resolve_path=True), help='Path to a file to record downloaded video IDs.')
 @click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
 def main(
     tiktok_url: Optional[str],
@@ -62,6 +63,7 @@ def main(
     max_sleep_interval: Optional[int],
     cookies_from_browser: Optional[str],
     cookies_file: Optional[str],
+    download_archive: Optional[str],
     verbose: int,
 ):
     """
@@ -96,6 +98,7 @@ def main(
             max_sleep_interval=max_sleep_interval,
             cookies_from_browser=cookies_from_browser,
             cookies_file=cookies_file,
+            download_archive=download_archive,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
 
