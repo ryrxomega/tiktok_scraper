@@ -13,6 +13,7 @@ from .domains.config.repository import ConfigRepository
 from .domains.config.schemas import Config
 from .domains.config.services import ConfigService
 from .domains.tiktok.models import Video
+from .exporters import save_videos_to_csv
 from .domains.tiktok.repository import TikTokRepository
 from .domains.tiktok.services import FilterService
 
@@ -31,6 +32,7 @@ def _resolve_settings(
     max_sleep_interval: Optional[int],
     cookies_from_browser: Optional[str],
     cookies_file: Optional[str],
+    save_metadata_path: Optional[Path],
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -46,6 +48,7 @@ def _resolve_settings(
         'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
         'cookies_from_browser': cookies_from_browser or config.cookies_from_browser,
         'cookies_file': cookies_file or config.cookies_file,
+        'save_metadata_path': save_metadata_path or config.save_metadata_path,
     }
 
     # Determine if transcripts should be downloaded
@@ -96,6 +99,7 @@ def download_videos(
     download_transcripts: Optional[bool] = None,
     transcript_language: str = 'en-US',
     metadata_only: bool = False,
+    save_metadata_path: Optional[Path] = None,
     config_path: str = "config.ini",
     concurrent_downloads: int = 1,
     min_sleep_interval: Optional[int] = None,
@@ -154,6 +158,7 @@ def download_videos(
         max_sleep_interval,
         cookies_from_browser,
         cookies_file,
+        save_metadata_path,
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
@@ -183,6 +188,10 @@ def download_videos(
     logger.info("Found %d video(s) matching the criteria.", len(filtered_videos))
 
     # 4. Output / Action
+    if settings['save_metadata_path']:
+        logger.info("Saving metadata to %s...", settings['save_metadata_path'])
+        save_videos_to_csv(filtered_videos, settings['save_metadata_path'])
+
     if metadata_only:
         logger.info("Metadata only mode enabled. Skipping download.")
     elif filtered_videos:

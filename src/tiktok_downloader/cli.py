@@ -5,6 +5,7 @@ This module uses the `click` library to create a user-friendly CLI
 and orchestrates the application's services to perform its functions.
 """
 import logging
+import pathlib
 from typing import List, Optional
 
 import click
@@ -42,6 +43,7 @@ def _display_metadata(videos: List[Video]):
 @click.option('--transcripts/--no-transcripts', 'download_transcripts', default=None, help='Enable or disable transcript downloads.')
 @click.option('--transcript-language', default='en-US', help='The language of the transcript to download.')
 @click.option('--metadata-only', is_flag=True, help='Fetch and display metadata without downloading videos.')
+@click.option('--save-metadata', type=click.Path(dir_okay=False, writable=True, resolve_path=True), help='Save metadata to a CSV file.')
 @click.option('--concurrent-downloads', type=int, default=1, help='Number of concurrent downloads.')
 @click.option('--min-sleep-interval', type=int, help='Minimum time to wait between downloads.')
 @click.option('--max-sleep-interval', type=int, help='Maximum time to wait between downloads.')
@@ -57,6 +59,7 @@ def main(
     download_transcripts: Optional[bool],
     transcript_language: str,
     metadata_only: bool,
+    save_metadata: Optional[str],
     concurrent_downloads: int,
     min_sleep_interval: Optional[int],
     max_sleep_interval: Optional[int],
@@ -82,6 +85,7 @@ def main(
         if tiktok_url or from_file:
             click.echo("Fetching metadata...")
 
+        save_metadata_path = pathlib.Path(save_metadata) if save_metadata else None
         filtered_videos = download_videos(
             tiktok_url=tiktok_url,
             from_file=from_file,
@@ -91,6 +95,7 @@ def main(
             download_transcripts=download_transcripts,
             transcript_language=transcript_language,
             metadata_only=metadata_only,
+            save_metadata_path=save_metadata_path,
             concurrent_downloads=concurrent_downloads,
             min_sleep_interval=min_sleep_interval,
             max_sleep_interval=max_sleep_interval,
@@ -98,6 +103,9 @@ def main(
             cookies_file=cookies_file,
         )
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
+
+        if save_metadata_path:
+            click.echo(f"Metadata saved to {save_metadata_path}")
 
         if metadata_only:
             _display_metadata(filtered_videos)

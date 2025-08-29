@@ -178,6 +178,7 @@ def test_download_videos_from_file_and_download(
     mock_repo_instance.fetch_metadata.return_value = [mock_video]
     mock_filter_instance = mock_filter_service.return_value
     mock_filter_instance.apply_filters.return_value = [mock_video]
+    mock_config_service.return_value.load_config.return_value.save_metadata_path = None
 
     # Act
     result = download_videos(from_file="urls.txt")
@@ -189,3 +190,40 @@ def test_download_videos_from_file_and_download(
     mock_filter_instance.apply_filters.assert_called_once()
     mock_repo_instance.download_videos.assert_called_once()
     mock_logger.info.assert_any_call("Download complete.")
+
+
+@patch('tiktok_downloader.main.save_videos_to_csv')
+@patch('tiktok_downloader.main.ConfigRepository')
+@patch('tiktok_downloader.main.ConfigService')
+@patch('tiktok_downloader.main.TikTokRepository')
+@patch('tiktok_downloader.main.FilterService')
+def test_download_videos_saves_metadata(
+    mock_filter_service,
+    mock_tiktok_repo,
+    mock_config_service,
+    mock_config_repo,
+    mock_save_videos_to_csv,
+    mock_video,
+):
+    """
+    Test that `download_videos` calls `save_videos_to_csv` when
+    `save_metadata_path` is provided.
+    """
+    # Arrange
+    mock_repo_instance = mock_tiktok_repo.return_value
+    mock_repo_instance.fetch_metadata.return_value = [mock_video]
+    mock_filter_instance = mock_filter_service.return_value
+    mock_filter_instance.apply_filters.return_value = [mock_video]
+    save_path = "/tmp/metadata.csv"
+
+    # Act
+    result = download_videos(
+        tiktok_url="http://tiktok.com/testvideo",
+        save_metadata_path=save_path,
+    )
+
+    # Assert
+    assert result == [mock_video]
+    mock_repo_instance.fetch_metadata.assert_called_once()
+    mock_filter_instance.apply_filters.assert_called_once()
+    mock_save_videos_to_csv.assert_called_once_with([mock_video], save_path)
