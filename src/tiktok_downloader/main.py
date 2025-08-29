@@ -7,7 +7,7 @@ and as a library in other Python applications.
 """
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .domains.config.repository import ConfigRepository
 from .domains.config.schemas import Config
@@ -21,42 +21,48 @@ logger = logging.getLogger(__name__)
 
 def _resolve_settings(
     config: Config,
-    output_path: Optional[str],
-    min_likes: Optional[int],
-    min_views: Optional[int],
-    download_transcripts: Optional[bool],
-    transcript_language: str,
-    concurrent_downloads: int,
-    min_sleep_interval: Optional[int],
-    max_sleep_interval: Optional[int],
-    cookies_from_browser: Optional[str],
-    cookies_file: Optional[str],
+    cli_args: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
 
     CLI options always take precedence over settings from the config file.
     """
-    resolved_settings = {
-        'output_path': output_path or config.output_path or '.',
-        'min_likes': min_likes if min_likes is not None else config.min_likes,
-        'min_views': min_views if min_views is not None else config.min_views,
-        'concurrent_downloads': concurrent_downloads if concurrent_downloads is not None else config.concurrent_downloads,
-        'min_sleep_interval': min_sleep_interval if min_sleep_interval is not None else config.min_sleep_interval,
-        'max_sleep_interval': max_sleep_interval if max_sleep_interval is not None else config.max_sleep_interval,
-        'cookies_from_browser': cookies_from_browser or config.cookies_from_browser,
-        'cookies_file': cookies_file or config.cookies_file,
-    }
+    resolved_settings: Dict[str, Any] = {}
 
-    # Determine if transcripts should be downloaded
+    # Define settings to be resolved, mapping CLI arg name to config name
+    # and providing a default value if neither is present.
+    setting_definitions: List[Tuple[str, str, Any]] = [
+        ('output_path', 'output_path', '.'),
+        ('min_likes', 'min_likes', None),
+        ('min_views', 'min_views', None),
+        ('concurrent_downloads', 'concurrent_downloads', 1),
+        ('min_sleep_interval', 'min_sleep_interval', None),
+        ('max_sleep_interval', 'max_sleep_interval', None),
+        ('cookies_from_browser', 'cookies_from_browser', None),
+        ('cookies_file', 'cookies_file', None),
+        ('date_after', 'date_after', None),
+    ]
+
+    for cli_key, config_key, default in setting_definitions:
+        cli_value = cli_args.get(cli_key)
+        config_value = getattr(config, config_key, None)
+
+        if cli_value is not None:
+            resolved_settings[cli_key] = cli_value
+        else:
+            resolved_settings[cli_key] = config_value if config_value is not None else default
+
+    # Special handling for transcripts
+    download_transcripts = cli_args.get('download_transcripts')
     if download_transcripts is not None:
         transcripts_enabled = download_transcripts
     else:
         transcripts_enabled = config.transcripts or False
 
-    # Set transcript language if enabled
     if transcripts_enabled:
-        resolved_settings['transcript_language'] = transcript_language or config.transcript_language
+        transcript_language = cli_args.get('transcript_language') or config.transcript_language or 'en-US'
+        resolved_settings['transcript_language'] = transcript_language
     else:
         resolved_settings['transcript_language'] = None
 
@@ -88,46 +94,13 @@ def _get_urls_to_process(tiktok_url: Optional[str], from_file: Optional[str]) ->
 
 
 def download_videos(
-    tiktok_url: Optional[str] = None,
-    from_file: Optional[str] = None,
-    output_path: Optional[str] = None,
-    min_likes: Optional[int] = None,
-    min_views: Optional[int] = None,
-    download_transcripts: Optional[bool] = None,
-    transcript_language: str = 'en-US',
-    metadata_only: bool = False,
-    config_path: str = "config.ini",
-    concurrent_downloads: int = 1,
-    min_sleep_interval: Optional[int] = None,
-    max_sleep_interval: Optional[int] = None,
-    cookies_from_browser: Optional[str] = None,
-    cookies_file: Optional[str] = None,
+    **kwargs: Any,
 ) -> List[Video]:
     """
     The main entry point for the TikTok Downloader application.
 
     This function orchestrates the process of fetching, filtering, and
     downloading TikTok videos based on the provided parameters.
-
-    Args:
-        tiktok_url: A single TikTok URL.
-        from_file: Path to a file containing one TikTok URL per line.
-        output_path: The directory to save the downloaded videos.
-        min_likes: Filter for videos with at least this many likes.
-        min_views: Filter for videos with at least this many views.
-        download_transcripts: Whether to download transcripts.
-        transcript_language: The language for the transcript.
-        metadata_only: If True, only fetch and return metadata without downloading.
-        config_path: Path to the
-        configuration file.
-        cookies_from_browser: The browser to extract cookies from.
-        cookies_file: The path to a file containing cookies.
-
-    Returns:
-        A list of `Video` objects that match the criteria.
-
-    Raises:
-        ValueError: If no URLs are provided.
     """
     # 1. Setup
     logger.info("Initializing services...")
@@ -138,24 +111,13 @@ def download_videos(
     logger.debug("Services initialized.")
 
     # 2. Configuration & URL processing
+    config_path = kwargs.get('config_path', "config.ini")
     logger.info("Loading configuration from %s.", config_path)
     config = config_service.load_config(Path(config_path))
     logger.debug("Loaded config: %s", config)
 
-    settings = _resolve_settings(
-        config,
-        output_path,
-        min_likes,
-        min_views,
-        download_transcripts,
-        transcript_language,
-        concurrent_downloads,
-        min_sleep_interval,
-        max_sleep_interval,
-        cookies_from_browser,
-        cookies_file,
-    )
-    urls = _get_urls_to_process(tiktok_url, from_file)
+    settings = _resolve_settings(config, kwargs)
+    urls = _get_urls_to_process(kwargs.get('tiktok_url'), kwargs.get('from_file'))
 
     # 3. Core Logic: Fetch and Filter
     logger.info("Fetching metadata for %d URL(s)...", len(urls))
@@ -168,6 +130,7 @@ def download_videos(
                     url=url,
                     cookies_from_browser=settings['cookies_from_browser'],
                     cookies_file=settings['cookies_file'],
+                    date_after=settings['date_after'],
                 )
             )
         except Exception as exc:
@@ -183,7 +146,7 @@ def download_videos(
     logger.info("Found %d video(s) matching the criteria.", len(filtered_videos))
 
     # 4. Output / Action
-    if metadata_only:
+    if kwargs.get('metadata_only'):
         logger.info("Metadata only mode enabled. Skipping download.")
     elif filtered_videos:
         logger.info("Downloading %d video(s)...", len(filtered_videos))

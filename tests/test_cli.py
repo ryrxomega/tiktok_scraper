@@ -1,3 +1,6 @@
+"""
+Unit tests for the command-line interface in `tiktok_downloader.cli`.
+"""
 import logging
 from unittest.mock import patch
 
@@ -43,6 +46,8 @@ def test_cli_metadata_only_success(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        date_after=None,
+        verbose=0,
     )
     assert "Found 2 videos that match the criteria." in result.output
     assert "ID:          123" in result.output
@@ -80,6 +85,8 @@ def test_cli_filtering_options(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        date_after=None,
+        verbose=0,
     )
 
 
@@ -116,6 +123,8 @@ def test_cli_from_file(mock_download_videos):
             max_sleep_interval=None,
             cookies_from_browser=None,
             cookies_file=None,
+            date_after=None,
+            verbose=0,
         )
 
 
@@ -159,6 +168,8 @@ def test_cli_download_workflow_with_language(mock_download_videos):
         max_sleep_interval=None,
         cookies_from_browser=None,
         cookies_file=None,
+        date_after=None,
+        verbose=0,
     )
 
 
@@ -197,8 +208,6 @@ def test_cli_no_input_fails():
     THEN it should exit with an error.
     """
     runner = CliRunner()
-    # We patch the function to avoid running it, but we expect the CLI to handle
-    # the error before the function is even called.
     with patch('tiktok_downloader.cli.download_videos') as mock_call:
         mock_call.side_effect = ValueError("You must provide either a tiktok_url or from_file.")
         result = runner.invoke(main, [])
@@ -214,15 +223,12 @@ def test_cli_metadata_only_no_videos(mock_download_videos):
     WHEN the CLI is invoked
     THEN it should print a 'no videos' message.
     """
-    # ARRANGE
     mock_download_videos.return_value = []
     runner = CliRunner()
     url = "http://tiktok.com/@testuser"
 
-    # ACT
     result = runner.invoke(main, [url, '--metadata-only'])
 
-    # ASSERT
     assert result.exit_code == 0
     assert "No videos to display." in result.output
 
@@ -234,15 +240,12 @@ def test_cli_download_no_videos(mock_download_videos):
     WHEN the CLI is invoked for download
     THEN it should print a 'no videos' message and not download.
     """
-    # ARRANGE
     mock_download_videos.return_value = []
     runner = CliRunner()
     url = "http://tiktok.com/@testuser"
 
-    # ACT
-    result = runner.invoke(main, [url]) # No --metadata-only
+    result = runner.invoke(main, [url])
 
-    # ASSERT
     assert result.exit_code == 0
     assert "No videos to download." in result.output
 
@@ -255,28 +258,22 @@ def test_logging_verbose_flags(mock_download_videos, mock_setup_logging):
     WHEN the CLI is invoked
     THEN it should call setup_logging with the correct logging level.
     """
-    # ARRANGE
     mock_download_videos.return_value = []
     runner = CliRunner()
     url = "http://tiktok.com/@testuser"
 
-    # ACT & ASSERT for no verbose flag (default)
     runner.invoke(main, [url])
     mock_setup_logging.assert_called_with(logging.WARNING)
 
-    # ACT & ASSERT for -v
     runner.invoke(main, [url, '-v'])
     mock_setup_logging.assert_called_with(logging.INFO)
 
-    # ACT & ASSERT for --verbose
     runner.invoke(main, [url, '--verbose'])
     mock_setup_logging.assert_called_with(logging.INFO)
 
-    # ACT & ASSERT for -vv
     runner.invoke(main, [url, '-vv'])
     mock_setup_logging.assert_called_with(logging.DEBUG)
 
-    # ACT & ASSERT for -vvv (should still be DEBUG)
     runner.invoke(main, [url, '-vvv'])
     mock_setup_logging.assert_called_with(logging.DEBUG)
 
@@ -288,7 +285,6 @@ def test_cli_cookie_options(mock_download_videos):
     WHEN the CLI is invoked
     THEN it should call download_videos with the correct cookie values.
     """
-    # ARRANGE
     mock_download_videos.return_value = []
     runner = CliRunner()
     url = "http://tiktok.com/@testuser"
@@ -299,14 +295,12 @@ def test_cli_cookie_options(mock_download_videos):
         with open(cookie_file, "w") as f:
             f.write("test")
 
-        # ACT
         result = runner.invoke(main, [
             url,
             '--cookies-from-browser', browser,
             '--cookies-file', cookie_file,
         ])
 
-        # ASSERT
         assert result.exit_code == 0
         mock_download_videos.assert_called_once_with(
             tiktok_url=url,
@@ -322,4 +316,6 @@ def test_cli_cookie_options(mock_download_videos):
             max_sleep_interval=None,
             cookies_from_browser=browser,
             cookies_file=cookie_file,
+            date_after=None,
+            verbose=0,
         )

@@ -3,7 +3,7 @@ Repository for handling configuration data access.
 """
 import configparser
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 
 from .schemas import Config
 
@@ -32,27 +32,33 @@ class ConfigRepository:
         parser = configparser.ConfigParser()
         parser.read(path)
 
-        settings: Dict[str, Any] = {}
-        if "defaults" in parser:
-            defaults = parser["defaults"]
-            # The .get* methods of ConfigParser handle type conversion.
-            # We check for presence before getting to avoid errors.
-            if "output_path" in defaults:
-                settings["output_path"] = defaults.get("output_path")
-            if "min_likes" in defaults:
-                settings["min_likes"] = defaults.getint("min_likes")
-            if "min_views" in defaults:
-                settings["min_views"] = defaults.getint("min_views")
-            if "transcripts" in defaults:
-                settings["transcripts"] = defaults.getboolean("transcripts")
-            if "transcript_language" in defaults:
-                settings["transcript_language"] = defaults.get("transcript_language")
-            if "concurrent_downloads" in defaults:
-                settings["concurrent_downloads"] = defaults.getint("concurrent_downloads")
-            if "min_sleep_interval" in defaults:
-                settings["min_sleep_interval"] = defaults.getint("min_sleep_interval")
-            if "max_sleep_interval" in defaults:
-                settings["max_sleep_interval"] = defaults.getint("max_sleep_interval")
+        if "defaults" not in parser:
+            return Config()
 
-        # Pydantic will validate the types upon instantiation.
+        defaults = parser["defaults"]
+        settings: Dict[str, Any] = {}
+
+        # Map setting names to their getter methods in ConfigParser
+        setting_getters: Dict[str, Callable[..., Any]] = {
+            "output_path": defaults.get,
+            "min_likes": defaults.getint,
+            "min_views": defaults.getint,
+            "transcripts": defaults.getboolean,
+            "transcript_language": defaults.get,
+            "concurrent_downloads": defaults.getint,
+            "min_sleep_interval": defaults.getint,
+            "max_sleep_interval": defaults.getint,
+            "cookies_from_browser": defaults.get,
+            "cookies_file": defaults.get,
+            "date_after": defaults.get,
+        }
+
+        for setting, getter in setting_getters.items():
+            if setting in defaults:
+                # configparser returns empty string for empty values,
+                # which we want to treat as None.
+                value = getter(setting)
+                if value != "":
+                    settings[setting] = value
+
         return Config(**settings)

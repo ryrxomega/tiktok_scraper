@@ -26,3 +26,4 @@ class Config(BaseModel):
     max_sleep_interval: Optional[int] = None
     cookies_from_browser: Optional[str] = None
     cookies_file: Optional[str] = None
+    date_after: Optional[str] = None

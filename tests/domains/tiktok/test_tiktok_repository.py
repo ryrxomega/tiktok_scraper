@@ -227,6 +227,35 @@ def test_fetch_metadata_malformed_entry(MockYoutubeDL):
 
 
 @patch('yt_dlp.YoutubeDL')
+def test_fetch_metadata_with_date_after(MockYoutubeDL):
+    """
+    GIVEN a URL and a date_after parameter
+    WHEN fetch_metadata is called
+    THEN it should call yt-dlp with the correct dateafter option.
+    """
+    # ARRANGE
+    mock_instance = MagicMock()
+    mock_instance.extract_info.return_value = {}
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+
+    repo = TikTokRepository()
+    url = "http://tiktok.com/@testuser"
+    date_after = "20230101"
+
+    # ACT
+    repo.fetch_metadata(url, date_after=date_after)
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'force_generic_extractor': True,
+        'dateafter': date_after,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+
+
+@patch('yt_dlp.YoutubeDL')
 def test_fetch_metadata_with_cookies(MockYoutubeDL):
     """
     GIVEN a URL and cookie parameters

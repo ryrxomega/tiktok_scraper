@@ -5,7 +5,7 @@ This module uses the `click` library to create a user-friendly CLI
 and orchestrates the application's services to perform its functions.
 """
 import logging
-from typing import List, Optional
+from typing import List, Any
 
 import click
 
@@ -47,29 +47,16 @@ def _display_metadata(videos: List[Video]):
 @click.option('--max-sleep-interval', type=int, help='Maximum time to wait between downloads.')
 @click.option('--cookies-from-browser', help='The browser to extract cookies from (e.g., chrome, firefox).')
 @click.option('--cookies-file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), help='Path to a file containing cookies.')
+@click.option('--date-after', help='Download videos uploaded on or after this date (YYYYMMDD).')
 @click.option('-v', '--verbose', count=True, help='Enable verbose logging. Use -vv for debug level.')
-def main(
-    tiktok_url: Optional[str],
-    from_file: Optional[str],
-    output_path: Optional[str],
-    min_likes: Optional[int],
-    min_views: Optional[int],
-    download_transcripts: Optional[bool],
-    transcript_language: str,
-    metadata_only: bool,
-    concurrent_downloads: int,
-    min_sleep_interval: Optional[int],
-    max_sleep_interval: Optional[int],
-    cookies_from_browser: Optional[str],
-    cookies_file: Optional[str],
-    verbose: int,
-):
+def main(**kwargs: Any):
     """
     A command-line tool to download TikTok videos and their metadata
     based on user-defined filters.
     You must provide either a TIKTOK_URL or the --from-file option.
     """
     # 1. Configure logging
+    verbose = kwargs.get('verbose', 0)
     if verbose == 1:
         log_level = logging.INFO
     elif verbose >= 2:
@@ -79,27 +66,14 @@ def main(
     setup_logging(log_level)
 
     try:
-        if tiktok_url or from_file:
+        if kwargs.get('tiktok_url') or kwargs.get('from_file'):
             click.echo("Fetching metadata...")
 
-        filtered_videos = download_videos(
-            tiktok_url=tiktok_url,
-            from_file=from_file,
-            output_path=output_path,
-            min_likes=min_likes,
-            min_views=min_views,
-            download_transcripts=download_transcripts,
-            transcript_language=transcript_language,
-            metadata_only=metadata_only,
-            concurrent_downloads=concurrent_downloads,
-            min_sleep_interval=min_sleep_interval,
-            max_sleep_interval=max_sleep_interval,
-            cookies_from_browser=cookies_from_browser,
-            cookies_file=cookies_file,
-        )
+        filtered_videos = download_videos(**kwargs)
+
         click.echo(f"Found {len(filtered_videos)} videos that match the criteria.")
 
-        if metadata_only:
+        if kwargs.get('metadata_only'):
             _display_metadata(filtered_videos)
         else:
             if not filtered_videos:

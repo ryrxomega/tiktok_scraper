@@ -31,6 +31,7 @@ class TikTokRepository:
         self,
         cookies_from_browser: Optional[str] = None,
         cookies_file: Optional[str] = None,
+        date_after: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Builds the base options dictionary for yt-dlp."""
         ydl_opts: Dict[str, Any] = {
@@ -40,6 +41,8 @@ class TikTokRepository:
             ydl_opts['cookies_from_browser'] = cookies_from_browser
         if cookies_file:
             ydl_opts['cookiefile'] = cookies_file
+        if date_after:
+            ydl_opts['dateafter'] = date_after
         return ydl_opts
 
     def fetch_metadata(
@@ -47,6 +50,7 @@ class TikTokRepository:
         url: str,
         cookies_from_browser: Optional[str] = None,
         cookies_file: Optional[str] = None,
+        date_after: Optional[str] = None,
     ) -> List[Video]:
         """
         Fetches video metadata from a given TikTok URL.
@@ -59,6 +63,7 @@ class TikTokRepository:
             url: The TikTok URL to fetch metadata from.
             cookies_from_browser: The browser to extract cookies from.
             cookies_file: The path to a file containing cookies.
+            date_after: The date to filter videos after.
 
         Returns:
             A list of Video domain models, or an empty list if no videos are found.
@@ -66,6 +71,7 @@ class TikTokRepository:
         ydl_opts = self._get_ydl_opts(
             cookies_from_browser=cookies_from_browser,
             cookies_file=cookies_file,
+            date_after=date_after,
         )
         ydl_opts.update({
             'extract_flat': True,
