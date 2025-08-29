@@ -110,6 +110,7 @@ class TikTokRepository:
         max_sleep_interval: Optional[int] = None,
         cookies_from_browser: Optional[str] = None,
         cookies_file: Optional[str] = None,
+        download_archive_path: Optional[str] = None,
     ) -> None:
         """
         Downloads the given list of videos using yt-dlp.
@@ -123,6 +124,7 @@ class TikTokRepository:
             max_sleep_interval: Maximum time to wait between downloads.
             cookies_from_browser: The browser to extract cookies from.
             cookies_file: The path to a file containing cookies.
+            download_archive_path: Path to the download archive file.
         """
         if not videos:
             return
@@ -149,6 +151,8 @@ class TikTokRepository:
             ydl_opts['sleep_interval'] = min_sleep_interval
         if max_sleep_interval:
             ydl_opts['max_sleep_interval'] = max_sleep_interval
+        if download_archive_path:
+            ydl_opts['download_archive'] = download_archive_path
 
         video_urls = [v.webpage_url for v in videos]
 

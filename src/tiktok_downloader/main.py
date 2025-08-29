@@ -19,6 +19,19 @@ from .domains.tiktok.services import FilterService
 logger = logging.getLogger(__name__)
 
 
+def _resolve_archive_path(
+    download_archive: Optional[str],
+    config_archive: Optional[str],
+    output_path: str,
+) -> str:
+    """Resolves the path for the download archive."""
+    if download_archive:
+        return download_archive
+    if config_archive:
+        return config_archive
+    return str(Path(output_path) / ".tiktok-downloader-archive.txt")
+
+
 def _resolve_settings(
     config: Config,
     output_path: Optional[str],
@@ -31,6 +44,7 @@ def _resolve_settings(
     max_sleep_interval: Optional[int],
     cookies_from_browser: Optional[str],
     cookies_file: Optional[str],
+    download_archive: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Merges settings from the config file and CLI options.
@@ -49,16 +63,18 @@ def _resolve_settings(
     }
 
     # Determine if transcripts should be downloaded
-    if download_transcripts is not None:
-        transcripts_enabled = download_transcripts
-    else:
-        transcripts_enabled = config.transcripts or False
-
-    # Set transcript language if enabled
+    transcripts_enabled = download_transcripts if download_transcripts is not None else config.transcripts
     if transcripts_enabled:
         resolved_settings['transcript_language'] = transcript_language or config.transcript_language
     else:
         resolved_settings['transcript_language'] = None
+
+    # Resolve download archive path
+    resolved_settings['download_archive'] = _resolve_archive_path(
+        download_archive,
+        config.download_archive,
+        str(resolved_settings['output_path'])
+    )
 
     logger.debug("Resolved settings: %s", resolved_settings)
     return resolved_settings
@@ -102,6 +118,7 @@ def download_videos(
     max_sleep_interval: Optional[int] = None,
     cookies_from_browser: Optional[str] = None,
     cookies_file: Optional[str] = None,
+    download_archive: Optional[str] = None,
 ) -> List[Video]:
     """
     The main entry point for the TikTok Downloader application.
@@ -122,6 +139,7 @@ def download_videos(
         configuration file.
         cookies_from_browser: The browser to extract cookies from.
         cookies_file: The path to a file containing cookies.
+        download_archive: Path to the download archive file.
 
     Returns:
         A list of `Video` objects that match the criteria.
@@ -154,6 +172,7 @@ def download_videos(
         max_sleep_interval,
         cookies_from_browser,
         cookies_file,
+        download_archive,
     )
     urls = _get_urls_to_process(tiktok_url, from_file)
 
@@ -196,6 +215,7 @@ def download_videos(
             max_sleep_interval=settings['max_sleep_interval'],
             cookies_from_browser=settings['cookies_from_browser'],
             cookies_file=settings['cookies_file'],
+            download_archive_path=settings['download_archive'],
         )
         logger.info("Download complete.")
     else:

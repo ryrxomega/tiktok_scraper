@@ -352,6 +352,43 @@ def test_download_videos_empty_list(MockYoutubeDL):
 
 
 @patch('yt_dlp.YoutubeDL')
+def test_download_videos_with_archive(MockYoutubeDL):
+    """
+    GIVEN a list of videos and a download archive path
+    WHEN download_videos is called
+    THEN it should call yt-dlp with the correct archive option.
+    """
+    # ARRANGE
+    videos_to_download = [
+        Video(id='12345', title='Video 1', webpage_url='http://.../12345'),
+    ]
+    output_path = "/fake/path"
+    archive_path = "/fake/path/archive.txt"
+
+    mock_instance = MagicMock()
+    MockYoutubeDL.return_value.__enter__.return_value = mock_instance
+    repo = TikTokRepository()
+
+    # ACT
+    repo.download_videos(
+        videos=videos_to_download,
+        output_path=output_path,
+        transcript_language=None,
+        download_archive_path=archive_path,
+    )
+
+    # ASSERT
+    expected_ydl_opts = {
+        'quiet': True,
+        'outtmpl': f'{output_path}/%(title)s [%(id)s].%(ext)s',
+        'writethumbnail': True,
+        'download_archive': archive_path,
+    }
+    MockYoutubeDL.assert_called_once_with(expected_ydl_opts)
+    mock_instance.download.assert_called_once_with([v.webpage_url for v in videos_to_download])
+
+
+@patch('yt_dlp.YoutubeDL')
 def test_fetch_metadata_with_empty_entry(MockYoutubeDL):
     """
     GIVEN yt-dlp returns a list with a None entry
