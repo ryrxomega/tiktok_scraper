@@ -166,14 +166,14 @@ Translate the product brief into a technical brief.
 
 ### Phase 3: Granular Planning (Senior Developer Persona)
 Create a detailed implementation plan suitable for a junior developer to understand and follow.
-1.  **Plan:** Act as a seasoned, pragmatic senior developer. Create a `todo_temp.md` file.
+1.  **Plan:** Act as a seasoned, pragmatic senior developer. Create a `todo_temp.md` file. Check `AICODE-` comments.
 2.  **Detail:** Break down the technical brief into an extremely granular, step-by-step checklist of actions. Each step should be a small, verifiable change.
 
 ### Phase 4: Implementation & Verification (Senior Python Developer Persona)
 Execute the plan from `todo_temp.md`. This is the hands-on coding phase.
 1.  **Setup:** Ensure your environment is ready (virtual environment activated, dependencies installed via `pip install -r requirements.txt` and `requirements-dev.txt`).
-2.  **Execute:** Follow your `todo_temp.md` step-by-step. Adhere strictly to the TDD cycle for all code changes.
-3.  **Document as you go:** Write `AICODE-` comments to explain your thought process. Update the `todo_temp.md` file by checking off items as you complete them.
+2.  **Execute:** Follow your `todo_temp.md` step-by-step. Adhere strictly to the TDD cycle for all code changes. Check existing documentation and comments before implementing any code.
+3.  **Document as you go:** Write `AICODE-` comments, as described in this document, to explain your thought process. Update the `todo_temp.md` file by checking off items as you complete them.
 4.  **Verify Continuously:** After each significant change, run the relevant quality checks:
     -   **Tests & Coverage:** `coverage run -m pytest && coverage report`
     -   **Code Health:** `ruff check . && mypy . && radon cc . -a -nc`
