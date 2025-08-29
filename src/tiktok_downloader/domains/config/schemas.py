@@ -1,6 +1,7 @@
 """
 Defines the Pydantic models for the configuration domain.
 """
+from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel
@@ -26,3 +27,4 @@ class Config(BaseModel):
     max_sleep_interval: Optional[int] = None
     cookies_from_browser: Optional[str] = None
     cookies_file: Optional[str] = None
+    save_metadata_path: Optional[Path] = None
